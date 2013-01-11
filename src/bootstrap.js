@@ -1,5 +1,5 @@
 /**
- * Copyright 2012 Jorge Villalobos
+ * Copyright 2013 Jorge Villalobos
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -157,6 +157,51 @@ AAAHandler.prototype = {
    * add-on id.
    */
   _modifyListingPage : function(aSlug) {
+    let isPersonaListing =
+      (null != this._doc.getElementById("persona-summary"));
+
+    if (isPersonaListing) {
+      this._modifyPersonaListing(aSlug);
+    } else {
+      this._modifyRegularListing(aSlug);
+    }
+  },
+
+  /**
+   * Adds a few useful admin links to Persona listing pages.
+   */
+  _modifyPersonaListing : function(aSlug) {
+    let summaryNode = this._doc.getElementById("persona-summary");
+    let personaNode =
+      this._getSingleXPath(
+        "//div[@class='persona-preview']/div[@data-browsertheme]");
+
+    if (null != personaNode) {
+      let personaJSON = personaNode.getAttribute("data-browsertheme");
+      let persona = JSON.parse(personaJSON);
+      let headerLink = this._createLink("Header", persona.headerURL);
+      let footerLink = this._createLink("Footer", persona.footerURL);
+      let insertionPoint = this._getSingleXPath("//div[@class='widgets']");
+
+      if (null != insertionPoint) {
+        headerLink.setAttribute("class", "collection-add widget collection");
+        insertionPoint.appendChild(headerLink);
+
+        footerLink.setAttribute("class", "collection-add widget collection");
+        insertionPoint.appendChild(footerLink);
+      } else {
+        this._log("Insertion point could not be found.");
+      }
+    } else {
+      this._log("Persona node could not be found.");
+    }
+  },
+
+  /**
+   * Adds a few useful admin links to non-Persona add-on listing pages, and
+   * exposes the internal add-on id.
+   */
+  _modifyRegularListing : function(aSlug) {
     let addonNode = this._doc.getElementById("addon");
     let is404 = (null == addonNode);
     let adminLink = this._createAdminLink(aSlug);
@@ -301,7 +346,7 @@ AAAHandler.prototype = {
 
   _createAdminLink : function(aId) {
     let link =
-      this._createLink(
+      this._createAMOLink(
         "Admin this Add-on", "/admin/addon/manage/$(PARAM)", aId);
 
     return link;
@@ -309,7 +354,7 @@ AAAHandler.prototype = {
 
   _createEditLink : function(aId, aText) {
     let link =
-      this._createLink(
+      this._createAMOLink(
         ((null != aText) ? aText : "Edit this Add-on"),
         "/developers/addon/$(PARAM)/edit/", aId);
 
@@ -318,21 +363,32 @@ AAAHandler.prototype = {
 
   _createReviewLink : function(aId) {
     let link =
-      this._createLink(
+      this._createAMOLink(
         "Review this Add-on", "/editors/review/$(PARAM)", aId);
 
     return link;
   },
 
-  _createLink : function(aText, aPath, aParameter) {
+  _createAMOLink : function(aText, aPath, aParameter) {
     let isPreview = this._isPreview();
-    let link = this._doc.createElement("a");
-    let linkContent = this._doc.createTextNode(aText);
     let domain = (!isPreview ? "addons.mozilla.org" : "addons-dev.allizom.org");
     let href = "https://" + domain + aPath;
 
     href = href.replace("$(PARAM)", aParameter);
-    link.setAttribute("href", href);
+
+    return this._createLink(aText, href);
+  },
+
+  /**
+   * Creates an 'a' node with the given text and URL.
+   * @param aText the text in the link.
+   * @param aURL the URL the link points to.
+   */
+  _createLink : function(aText, aURL) {
+    let link = this._doc.createElement("a");
+    let linkContent = this._doc.createTextNode(aText);
+
+    link.setAttribute("href", aURL);
     link.appendChild(linkContent);
 
     return link;

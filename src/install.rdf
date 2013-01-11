@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 
 <!--
-  - Copyright 2012 Jorge Villalobos
+  - Copyright 2013 Jorge Villalobos
   -
   - Licensed under the Apache License, Version 2.0 (the "License");
   - you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
     <em:id>aaa@xulforge.com</em:id>
     <em:name>AMO Admin Assistant</em:name>
     <em:description>Some simple tools to facilitate AMO administration.</em:description>
-    <em:version>1.1</em:version>
+    <em:version>1.2</em:version>
     <em:creator>Jorge Villalobos</em:creator>
     <em:bootstrap>true</em:bootstrap>
     <em:type>2</em:type>
@@ -33,7 +33,7 @@
       <Description>
         <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
         <em:minVersion>4.0</em:minVersion>
-        <em:maxVersion>18.*</em:maxVersion>
+        <em:maxVersion>19.*</em:maxVersion>
       </Description>
     </em:targetApplication>
 
