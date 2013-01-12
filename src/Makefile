@@ -49,6 +49,13 @@ all: $(xpi_file)
 	@echo "Build finished successfully."
 	@echo
 
+# This builds the extension XPI file and copies it to a mounted Android device.
+.PHONY: android
+android: all
+	@adb push $(xpi_file) /mnt/sdcard/Download
+	@echo "Copied to device."
+
+
 # This cleans all temporary files and directories created by 'make'.
 .PHONY: clean
 clean:

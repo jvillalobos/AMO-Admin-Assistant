@@ -50,12 +50,12 @@ let AAA = {
       addListener : function(aWindow) {
         aWindow.AAAListener =
           function(aEvent) { AAA.handleLoad(aEvent); };
-        aWindow.gBrowser.addEventListener(
+        AAA.getGBrowser(aWindow).addEventListener(
           "load", aWindow.AAAListener, true, true);
       },
 
       removeListener : function(aWindow) {
-        aWindow.gBrowser.removeEventListener(
+        AAA.getGBrowser(aWindow).removeEventListener(
           "load", aWindow.AAAListener, true, true);
         aWindow.AAAListener = null;
       },
@@ -118,6 +118,10 @@ let AAA = {
 
       handler.run();
     }
+  },
+
+  getGBrowser : function (aWindow) {
+    return ((null != aWindow.gBrowser) ? aWindow.gBrowser : aWindow.BrowserApp.deck);
   }
 };
 
