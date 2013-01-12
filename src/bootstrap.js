@@ -19,11 +19,13 @@
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 
-const RE_DOMAINS = /(?:mozilla|allizom)\.(?:org|com)/i;
+const RE_DOMAINS = /(?:mozilla|allizom|getpersonas)\.(?:org|com)/i;
 const RE_LISTING_PAGE =
   /^(?:https\:\/\/addons(?:-dev)?\.(?:mozilla|allizom)\.org)?\/(?:z\/)?(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?addon\/([^\/]+)/i;
 const RE_EDIT_PAGE =
   /^(?:https\:\/\/addons(?:-dev)?\.(?:mozilla|allizom)\.org)?\/(?:z\/)?(?:[a-z]{2}(?:\-[a-z]{2})?\/)?developers\/addon\/([^\/]+)/i;
+const RE_PERSONA_PAGE =
+  /^https?\:\/\/www.getpersonas.com\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?persona\//i;
 const RE_IS_PREVIEW = /^https\:\/\/addons-dev\.allizom\.org/i;
 const RE_FILE_VIEWER =
   /^(?:https\:\/\/addons(?:-dev)?\.(?:mozilla|allizom)\.org)?\/(?:z\/)?(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?files\//i;
@@ -63,7 +65,7 @@ let AAA = {
         let that = this;
         let domWindow =
           xulWindow.QueryInterface(Ci.nsIInterfaceRequestor).
-          getInterface(Ci.nsIDOMWindowInternal);
+          getInterface(Ci.nsIDOMWindow);
 
         // Wait for it to finish loading
         domWindow.addEventListener(
@@ -148,6 +150,9 @@ AAAHandler.prototype = {
       } else if (RE_FILE_VIEWER.test(this._href)) {
         this._log("Found a source viewer page.");
         this._widenSourceViewer();
+      } else if (RE_PERSONA_PAGE.test(this._href)) {
+        this._log("Found a getpersonas page.");
+        this._addLinksToGetPersonas();
       }
     }
   },
@@ -188,6 +193,34 @@ AAAHandler.prototype = {
         insertionPoint.appendChild(headerLink);
 
         footerLink.setAttribute("class", "collection-add widget collection");
+        insertionPoint.appendChild(footerLink);
+      } else {
+        this._log("Insertion point could not be found.");
+      }
+    } else {
+      this._log("Persona node could not be found.");
+    }
+  },
+
+  /**
+   * Adds header and footer links for Personas pages at getpersonas.com.
+   */
+  _addLinksToGetPersonas : function() {
+    let detailNode = this._getSingleXPath("//img[@class='detailed-view']");
+
+    if (null != detailNode) {
+      let personaJSON = detailNode.getAttribute("persona");
+      let persona = JSON.parse(personaJSON);
+      let headerLink =
+        this._createLink("Header", this._removeRand(persona.headerURL));
+      let footerLink =
+        this._createLink("Footer", this._removeRand(persona.footerURL));
+      let insertionPoint = this._doc.getElementById("buttons");
+
+      if (null != insertionPoint) {
+        headerLink.setAttribute("style", "margin-right: 1em;");
+        insertionPoint.appendChild(headerLink);
+
         insertionPoint.appendChild(footerLink);
       } else {
         this._log("Insertion point could not be found.");
@@ -415,6 +448,13 @@ AAAHandler.prototype = {
     }
 
     return node;
+  },
+
+  /**
+   * Removes the random parameter (like ?2304345) from a URL.
+   */
+  _removeRand : function(aURL) {
+    return aURL.substring(0, aURL.indexOf('?'));
   },
 
   _log : function (aText) {
