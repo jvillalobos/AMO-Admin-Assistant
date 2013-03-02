@@ -245,7 +245,7 @@ AAAHandler.prototype = {
     let addonNode = this._doc.getElementById("addon");
     let is404 = (null == addonNode);
     let adminLink = this._createAdminLink(aSlug);
-    let reviewLink = this._createReviewLink(aSlug);
+    let reviewLink = this._createAMOReviewLink(aSlug);
     let insertionPoint = null;
 
     if (!is404) {
@@ -301,9 +301,13 @@ AAAHandler.prototype = {
     let insertionPoint = result.parentNode;
 
     if (null != insertionPoint) {
-      let adminLink = this._createAdminLink(aSlug);
-      let reviewLink = this._createReviewLink(aSlug);
       let container = this._doc.createElement("li");
+      let adminLink = this._createAdminLink(aSlug);
+      let isBgThemePage =
+        (null != this._doc.getElementById("edit-addon-license"));
+      let reviewLink =
+        (isBgThemePage ? this._createMPReviewLink(aSlug) :
+         this._createAMOReviewLink(aSlug));
 
       container.appendChild(adminLink);
       insertionPoint.insertBefore(
@@ -401,7 +405,7 @@ AAAHandler.prototype = {
     return link;
   },
 
-  _createReviewLink : function(aId) {
+  _createAMOReviewLink : function(aId) {
     let link =
       this._createAMOLink(
         "Review this Add-on", "/editors/review/$(PARAM)", aId);
@@ -409,9 +413,28 @@ AAAHandler.prototype = {
     return link;
   },
 
+  _createMPReviewLink : function(aId) {
+    let link =
+      this._createMPLink(
+        "Review this Add-on", "/reviewers/themes/queue/single/$(PARAM)", aId);
+
+    return link;
+  },
+
   _createAMOLink : function(aText, aPath, aParameter) {
     let isPreview = this._isPreview();
     let domain = (!isPreview ? "addons.mozilla.org" : "addons-dev.allizom.org");
+    let href = "https://" + domain + aPath;
+
+    href = href.replace("$(PARAM)", aParameter);
+
+    return this._createLink(aText, href);
+  },
+
+  _createMPLink : function(aText, aPath, aParameter) {
+    let isPreview = this._isPreview();
+    let domain =
+      (!isPreview ? "marketplace.mozilla.org" : "marketplace-dev.allizom.org");
     let href = "https://" + domain + aPath;
 
     href = href.replace("$(PARAM)", aParameter);
