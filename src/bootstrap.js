@@ -23,7 +23,7 @@ const RE_DOMAINS = /(?:mozilla|allizom|getpersonas)\.(?:org|com)/i;
 const RE_LISTING_PAGE =
   /^(?:https\:\/\/addons(?:-dev)?\.(?:mozilla|allizom)\.org)?\/(?:z\/)?(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?addon\/([^\/]+)/i;
 const RE_EDIT_PAGE =
-  /^(?:https\:\/\/addons(?:-dev)?\.(?:mozilla|allizom)\.org)?\/(?:z\/)?(?:[a-z]{2}(?:\-[a-z]{2})?\/)?developers\/addon\/([^\/]+)/i;
+  /^(?:https\:\/\/addons(?:-dev)?\.(?:mozilla|allizom)\.org)?\/(?:z\/)?(?:[a-z]{2}(?:\-[a-z]{2})?\/)?developers\/addon\/([^\/]+)(?:\/([^\/]+))?/i;
 const RE_PERSONA_PAGE =
   /^https?\:\/\/www.getpersonas.com\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?persona\//i;
 const RE_IS_PREVIEW = /^https\:\/\/addons-dev\.allizom\.org/i;
@@ -145,9 +145,12 @@ AAAHandler.prototype = {
       let matchEdit = this._href.match(RE_EDIT_PAGE, "ig");
 
       if (matchEdit && (2 <= matchEdit.length)) {
-        this._log("Found an AMO edit page.");
-        // this is an AMO listing page. matchEdit[1] is the add-on slug.
-        this._modifyEditPage(matchEdit[1]);
+        // this excludes validation result pages.
+        if ((2 == matchEdit.length) || ("file" != matchEdit[2])) {
+          this._log("Found an AMO edit page.");
+          // this is an AMO edit page. matchEdit[1] is the add-on slug.
+          this._modifyEditPage(matchEdit[1]);
+        }
       } else if (RE_ADDONS_MXR.test(this._href)) {
         this._log("Found an add-ons MXR page.");
         this._addLinksToMXR();
