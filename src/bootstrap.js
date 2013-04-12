@@ -24,6 +24,8 @@ const RE_LISTING_PAGE =
   /^(?:https\:\/\/addons(?:-dev)?\.(?:mozilla|allizom)\.org)?\/(?:z\/)?(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?addon\/([^\/]+)/i;
 const RE_EDIT_PAGE =
   /^(?:https\:\/\/addons(?:-dev)?\.(?:mozilla|allizom)\.org)?\/(?:z\/)?(?:[a-z]{2}(?:\-[a-z]{2})?\/)?developers\/addon\/([^\/]+)(?:\/([^\/]+))?/i;
+const RE_BG_THEME_EDIT_PAGE =
+  /^(?:https\:\/\/addons(?:-dev)?\.(?:mozilla|allizom)\.org)?\/(?:z\/)?(?:[a-z]{2}(?:\-[a-z]{2})?\/)?developers\/theme\/([^\/]+)(?:\/([^\/]+))?/i;
 const RE_USER_PAGE =
   /^(?:https\:\/\/addons(?:-dev)?\.(?:mozilla|allizom)\.org)?\/(?:z\/)?(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?user\//i;
 const RE_PERSONA_PAGE =
@@ -159,6 +161,17 @@ AAAHandler.prototype = {
         // this is an AMO edit page. matchEdit[1] is the add-on slug.
         this._modifyEditPage(matchEdit[1]);
       }
+
+      return;
+    }
+
+    // check if this is a bg theme edit page.
+    let matchBgEdit = this._href.match(RE_BG_THEME_EDIT_PAGE, "ig");
+
+    if (matchBgEdit && (2 <= matchBgEdit.length)) {
+      this._log("Found an AMO bg theme edit page.");
+      // this is an AMO bg theme edit page. matchBgEdit[1] is the add-on slug.
+      this._modifyBgThemeEditPage(matchBgEdit[1]);
 
       return;
     }
@@ -306,24 +319,19 @@ AAAHandler.prototype = {
   },
 
   /**
-   * Adds a few useful admin links to edit pages, and exposes the internal
-   * add-on id.
+   * Adds a few useful admin links to edit pages.
    * @param aSlug the slug that identifies the add-on.
    */
   _modifyEditPage : function(aSlug) {
     let result =
       this._getSingleXPath(
         "//ul[@class='refinements'][2]/li/a[contains(@href, '/addon/" + aSlug + "/')]");
-    let insertionPoint = result.parentNode;
 
-    if (null != insertionPoint) {
+    if (null != result) {
+      let insertionPoint = result.parentNode;
       let container = this._doc.createElement("li");
       let adminLink = this._createAdminLink(aSlug);
-      let isBgThemePage =
-        (null != this._doc.getElementById("edit-addon-license"));
-      let reviewLink =
-        (isBgThemePage ? this._createMPReviewLink(aSlug) :
-         this._createAMOReviewLink(aSlug));
+      let reviewLink = this._createAMOReviewLink(aSlug);
 
       container.appendChild(adminLink);
       insertionPoint.insertBefore(
@@ -333,6 +341,25 @@ AAAHandler.prototype = {
       container.appendChild(reviewLink);
       insertionPoint.insertBefore(
         container, insertionPoint.firstChild.nextSibling);
+    } else {
+      this._log("Insertion point could not be found.");
+    }
+  },
+
+  /**
+   * Adds a few useful admin links to background theme edit pages.
+   * @param aSlug the slug that identifies the theme.
+   */
+  _modifyBgThemeEditPage : function(aSlug) {
+    let result = this._getSingleXPath("//div[@class='info']/p[2]");
+
+    if (null != result) {
+      let insertionPoint = result.parentNode;
+      let container = this._doc.createElement("p");
+      let reviewLink = this._createMPReviewLink(aSlug);
+
+      container.appendChild(reviewLink);
+      insertionPoint.insertBefore(container, result.nextSibling);
     } else {
       this._log("Insertion point could not be found.");
     }
