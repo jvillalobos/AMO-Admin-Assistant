@@ -24,6 +24,8 @@ const RE_LISTING_PAGE =
   /^(?:https\:\/\/addons(?:-dev)?\.(?:mozilla|allizom)\.org)?\/(?:z\/)?(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?addon\/([^\/]+)/i;
 const RE_EDIT_PAGE =
   /^(?:https\:\/\/addons(?:-dev)?\.(?:mozilla|allizom)\.org)?\/(?:z\/)?(?:[a-z]{2}(?:\-[a-z]{2})?\/)?developers\/addon\/([^\/]+)(?:\/([^\/]+))?/i;
+const RE_USER_PAGE =
+  /^(?:https\:\/\/addons(?:-dev)?\.(?:mozilla|allizom)\.org)?\/(?:z\/)?(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?user\//i;
 const RE_PERSONA_PAGE =
   /^https?\:\/\/www.getpersonas.com\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?persona\//i;
 const RE_IS_PREVIEW = /^https\:\/\/addons-dev\.allizom\.org/i;
@@ -135,32 +137,45 @@ AAAHandler.prototype = {
    * Runs the AAA handler in the given document.
    */
   run : function() {
+    // check if this is a listing page.
     let matchListing = this._href.match(RE_LISTING_PAGE, "ig");
 
     if (matchListing && (2 <= matchListing.length)) {
       this._log("Found an AMO listing page.");
       // this is an AMO listing page. matchListing[1] is the add-on slug.
       this._modifyListingPage(matchListing[1]);
-    } else {
-      let matchEdit = this._href.match(RE_EDIT_PAGE, "ig");
+      // let the record state I hate early returns, but the logic in this
+      // function was becoming a bit unruly.
+      return;
+    }
 
-      if (matchEdit && (2 <= matchEdit.length)) {
-        // this excludes validation result pages.
-        if ((2 == matchEdit.length) || ("file" != matchEdit[2])) {
-          this._log("Found an AMO edit page.");
-          // this is an AMO edit page. matchEdit[1] is the add-on slug.
-          this._modifyEditPage(matchEdit[1]);
-        }
-      } else if (RE_ADDONS_MXR.test(this._href)) {
-        this._log("Found an add-ons MXR page.");
-        this._addLinksToMXR();
-      } else if (RE_FILE_VIEWER.test(this._href)) {
-        this._log("Found a source viewer page.");
-        this._widenSourceViewer();
-      } else if (RE_PERSONA_PAGE.test(this._href)) {
-        this._log("Found a getpersonas page.");
-        this._addLinksToGetPersonas();
+    // not a listing page, check if this is an edit page.
+    let matchEdit = this._href.match(RE_EDIT_PAGE, "ig");
+
+    if (matchEdit && (2 <= matchEdit.length)) {
+      // this excludes validation result pages.
+      if ((2 == matchEdit.length) || ("file" != matchEdit[2])) {
+        this._log("Found an AMO edit page.");
+        // this is an AMO edit page. matchEdit[1] is the add-on slug.
+        this._modifyEditPage(matchEdit[1]);
       }
+
+      return;
+    }
+
+    // nope, test the simpler cases.
+    if (RE_ADDONS_MXR.test(this._href)) {
+      this._log("Found an add-ons MXR page.");
+      this._addLinksToMXR();
+    } else if (RE_FILE_VIEWER.test(this._href)) {
+      this._log("Found a source viewer page.");
+      this._widenSourceViewer();
+    } else if (RE_PERSONA_PAGE.test(this._href)) {
+      this._log("Found a getpersonas page.");
+      this._addLinksToGetPersonas();
+    } else if (RE_USER_PAGE.test(this._href)) {
+      this._log("Found a user profile page.");
+      this._addLinksToUserPage();
     }
   },
 
@@ -293,6 +308,7 @@ AAAHandler.prototype = {
   /**
    * Adds a few useful admin links to edit pages, and exposes the internal
    * add-on id.
+   * @param aSlug the slug that identifies the add-on.
    */
   _modifyEditPage : function(aSlug) {
     let result =
@@ -317,6 +333,27 @@ AAAHandler.prototype = {
       container.appendChild(reviewLink);
       insertionPoint.insertBefore(
         container, insertionPoint.firstChild.nextSibling);
+    } else {
+      this._log("Insertion point could not be found.");
+    }
+  },
+
+  /**
+   * Adds an delete link to user pages.
+   */
+  _addLinksToUserPage : function() {
+    let manageButton = this._doc.getElementById("manage-user");
+
+    if (null != manageButton) {
+      let manageURL = manageButton.getAttribute("href");
+      let userId = manageURL.substring(manageURL.lastIndexOf("/") + 1);
+      let deleteLink = this._createDeleteUserLink(userId);
+
+      deleteLink.setAttribute("class", "button");
+      deleteLink.setAttribute(
+        "style",
+        "background: linear-gradient(rgb(225, 15, 0), rgb(191, 13, 0)) repeat scroll 0% 0% rgb(87, 132, 191)");
+      manageButton.parentNode.appendChild(deleteLink);
     } else {
       this._log("Insertion point could not be found.");
     }
@@ -401,6 +438,14 @@ AAAHandler.prototype = {
       this._createAMOLink(
         ((null != aText) ? aText : "Edit this Add-on"),
         "/developers/addon/$(PARAM)/edit/", aId);
+
+    return link;
+  },
+
+  _createDeleteUserLink : function(aId) {
+    let link =
+      this._createAMOLink(
+        "Delete user", "/admin/models/users/userprofile/$(PARAM)/delete/", aId);
 
     return link;
   },
