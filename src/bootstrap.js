@@ -117,7 +117,9 @@ let AAA = {
     let doc = aEvent.originalTarget;
 
     // do a quick domain test to filter out pages were aren't interested in.
-    if (RE_DOMAINS.test(doc.location.hostname)) {
+    if ((null != doc) && (null != doc.location) &&
+        (null != doc.location.hostname) &&
+        RE_DOMAINS.test(doc.location.hostname)) {
       let handler = new AAAHandler(doc);
 
       handler.run();
