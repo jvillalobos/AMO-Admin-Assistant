@@ -28,6 +28,8 @@ const RE_BG_THEME_EDIT_PAGE =
   /^(?:https\:\/\/addons(?:-dev)?\.(?:mozilla|allizom)\.org)?\/(?:z\/)?(?:[a-z]{2}(?:\-[a-z]{2})?\/)?developers\/theme\/([^\/]+)(?:\/([^\/]+))?/i;
 const RE_USER_PAGE =
   /^(?:https\:\/\/addons(?:-dev)?\.(?:mozilla|allizom)\.org)?\/(?:z\/)?(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?user\//i;
+const RE_USER_ADMIN_PAGE =
+  /^(?:https\:\/\/addons(?:-dev)?\.(?:mozilla|allizom)\.org)?\/(?:z\/)?(?:[a-z]{2}(?:\-[a-z]{2})?\/)?admin\/models\/auth\/user\/([0-9]+)?/i;
 const RE_PERSONA_PAGE =
   /^https?\:\/\/www.getpersonas.com\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?persona\//i;
 const RE_IS_PREVIEW = /^https\:\/\/addons-dev\.allizom\.org/i;
@@ -174,6 +176,22 @@ AAAHandler.prototype = {
       this._log("Found an AMO bg theme edit page.");
       // this is an AMO bg theme edit page. matchBgEdit[1] is the add-on slug.
       this._modifyBgThemeEditPage(matchBgEdit[1]);
+
+      return;
+    }
+
+    // check if this is a user admin page.
+    let matchUserAdmin = this._href.match(RE_USER_ADMIN_PAGE, "ig");
+
+    if (matchUserAdmin) {
+      if (null != matchUserAdmin[1]) {
+        this._log("Found a user admin page.");
+        // this is a user admin page. matchUserAdmin[1] is the user ID.
+        this._modifyUserAdminPage(matchUserAdmin[1]);
+      } else {
+        this._log("Found a user admin search page.");
+        this._modifyUserAdminSearchPage();
+      }
 
       return;
     }
@@ -389,6 +407,51 @@ AAAHandler.prototype = {
   },
 
   /**
+   * Improve the user administration page.
+   * @param aUserID the user ID from the page URL.
+   */
+  _modifyUserAdminPage : function(aUserID) {
+    let result = this._getSingleXPath("//a[@class='viewsitelink']");
+
+    if (null != result) {
+      result.setAttribute("href", ("/user/" + aUserID + "/"));
+    } else {
+      this._log("View on site button could not be found.");
+    }
+  },
+
+  /**
+   * Adds links to profile pages in user admin search results.
+   */
+  _modifyUserAdminSearchPage : function() {
+    try {
+      let xpath =
+        Cc["@mozilla.org/dom/xpath-evaluator;1"].
+          createInstance(Ci.nsIDOMXPathEvaluator);
+      let result =
+        xpath.evaluate(
+          "//table[@id='result_list']/tbody/tr/th/a", this._doc, null,
+          Ci.nsIDOMXPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+      let link;
+      let userID;
+      let newLink;
+
+      for (let i = 0 ; i < result.snapshotLength ; i++) {
+        link = result.snapshotItem(i);
+        userID = link.getAttribute("href").replace("/", "");
+        // create a new link that points to the profile page.
+        newLink = this._doc.createElement("a");
+        newLink.setAttribute("href", ("/user/" + userID + "/"));
+        newLink.setAttribute("style", "margin-left: 0.5em;");
+        newLink.textContent = "[" + userID + "]";
+        link.parentNode.appendChild(newLink);
+      }
+    } catch (e) {
+      this._log("_modifyUserAdminSearchPage error:\n" + e);
+    }
+  },
+
+  /**
    * Makes the numeric add-on id visible in add-on listing pages.
    * @param aAddonNode the node that holds the numeric add-on id.
    */
@@ -426,9 +489,10 @@ AAAHandler.prototype = {
           createInstance(Ci.nsIDOMXPathEvaluator);
       let result =
         xpath.evaluate(
-        "//a[number(substring-before(substring(@href,16), '/')) > 0 and " +
-        "string-length(substring-after(substring(@href,16), '/')) = 0]",
-      this._doc, null, Ci.nsIDOMXPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+          "//a[number(substring-before(substring(@href,16), '/')) > 0 and " +
+          "string-length(substring-after(substring(@href,16), '/')) = 0]",
+          this._doc, null, Ci.nsIDOMXPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
+          null);
       let link;
       let editLink;
       let match;
