@@ -292,9 +292,21 @@ AAAHandler.prototype = {
       let aside = this._getSingleXPath("//aside[@class='secondary']");
 
       if (null != aside) {
+        // author-disabled add-on page.
         insertionPoint = this._doc.createElement("div");
         insertionPoint.setAttribute("style", "margin-top: 1em;");
         aside.appendChild(insertionPoint);
+      } else {
+        let errorMessage = this._getSingleXPath("//div[@class='primary']");
+
+        if (null != errorMessage) {
+          // 404 pages (disabled, incomplete, or actually 404).
+          insertionPoint = this._doc.createElement("div");
+          insertionPoint.setAttribute(
+            "style", "margin-top: 1em; margin-bottom: 1em;");
+          errorMessage.insertBefore(
+            insertionPoint, errorMessage.firstElementChild.nextSibling);
+        }
       }
     }
 
