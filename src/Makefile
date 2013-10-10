@@ -5,7 +5,7 @@ extension_name := aaa
 extension_uuid := aaa@xulforge.com
 
 # The name of the profile dir where the extension can be installed.
-profile_dir := xulschool-dev
+profile_dir := aaa-dev
 
 # The zip application to be used.
 ZIP := zip
@@ -36,12 +36,6 @@ endif
 # The temporary location where the extension tree will be copied and built.
 build_dir := $(bin_dir)/build
 
-# The install.rdf file.
-install_rdf := install.rdf
-
-# The chrome.manifest file.
-chrome_manifest := chrome.manifest
-
 # This builds the extension XPI file.
 .PHONY: all
 all: $(xpi_file)
@@ -66,7 +60,9 @@ clean:
 # The sources for the XPI file. Uses variables defined in the included
 # Makefiles.
 xpi_built := install.rdf \
-             bootstrap.js
+             bootstrap.js \
+             chrome.manifest \
+             $(wildcard modules/*.js)
 
 $(xpi_file): $(xpi_built)
 	@echo "Creating XPI file."

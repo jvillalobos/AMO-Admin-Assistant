@@ -51,68 +51,27 @@ function shutdown(aData, aReason) {
 }
 
 let AAA = {
-  windowListener :
-    {
-      addListener : function(aWindow) {
+  init : function() {
+    Components.utils.import("chrome://amo-admin-modules/content/window.js");
+    WindowObserver.add(
+      "amo-admin",
+      function(aWindow) {
         aWindow.AAAListener =
           function(aEvent) { AAA.handleLoad(aEvent); };
         AAA.getGBrowser(aWindow).addEventListener(
           "load", aWindow.AAAListener, true, true);
-      },
-
-      removeListener : function(aWindow) {
-        AAA.getGBrowser(aWindow).removeEventListener(
-          "load", aWindow.AAAListener, true, true);
-        aWindow.AAAListener = null;
-      },
-
-      onOpenWindow : function(xulWindow) {
-        // A new window has opened.
-        let that = this;
-        let domWindow =
-          xulWindow.QueryInterface(Ci.nsIInterfaceRequestor).
-          getInterface(Ci.nsIDOMWindow);
-
-        // Wait for it to finish loading
-        domWindow.addEventListener(
-          "load",
-          function listener() {
-            domWindow.removeEventListener("load", listener, false);
-            // If this is a browser window then setup its UI
-            if (domWindow.document.documentElement.getAttribute("windowtype") ==
-                "navigator:browser") {
-              that.addListener(domWindow);
-            }
-        }, false);
-      },
-      onCloseWindow : function(xulwindow) {},
-      onWindowTitleChange: function(xulWindow, newTitle) {}
-    },
-
-  init : function() {
-    let wm =
-      Cc["@mozilla.org/appshell/window-mediator;1"].
-        getService(Ci.nsIWindowMediator);
-    let enumerator = wm.getEnumerator("navigator:browser");
-
-    while (enumerator.hasMoreElements()) {
-      this.windowListener.addListener(enumerator.getNext());
-    }
-
-    wm.addListener(this.windowListener);
+      });
   },
 
   uninit : function() {
-    let wm =
-      Cc["@mozilla.org/appshell/window-mediator;1"].
-        getService(Ci.nsIWindowMediator);
-    let enumerator = wm.getEnumerator("navigator:browser");
-
-    wm.removeListener(this.windowListener);
-
-    while (enumerator.hasMoreElements()) {
-      this.windowListener.removeListener(enumerator.getNext());
-    }
+    WindowObserver.remove(
+      "amo-admin",
+      function(aWindow) {
+        AAA.getGBrowser(aWindow).removeEventListener(
+          "load", aWindow.AAAListener, true, true);
+        aWindow.AAAListener = null;
+      });
+    Components.utils.unload("chrome://amo-admin-modules/content/window.js");
   },
 
   handleLoad : function (aEvent) {
