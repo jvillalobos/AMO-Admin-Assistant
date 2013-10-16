@@ -14,4 +14,4 @@
 # limitations under the License.
 ##
 
-content   amo-admin-modules   modules/
+content   amo-admin-scripts   scripts/

@@ -62,7 +62,7 @@ clean:
 xpi_built := install.rdf \
              bootstrap.js \
              chrome.manifest \
-             $(wildcard modules/*.js)
+             $(wildcard scripts/*.js)
 
 $(xpi_file): $(xpi_built)
 	@echo "Creating XPI file."
