@@ -19,33 +19,54 @@
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 
+const SCRIPT_URL = "chrome://amo-admin-scripts/content/aaa.js";
+const UNLOAD_MSG = "amo-admin-unload"
+
 function install(aData, aReason) {}
 
 function uninstall(aData, aReason) {}
 
 function startup(aData, aReason) {
-  AAA.init();
+  ContentScript.init();
 }
 
 function shutdown(aData, aReason) {
-  AAA.uninit();
+  ContentScript.uninit();
 }
 
-let AAA = {
+let ContentScript = {
   init : function() {
     let gmm =
       Cc["@mozilla.org/globalmessagemanager;1"].
         getService(Ci.nsIMessageListenerManager);
 
-    gmm.loadFrameScript("chrome://amo-admin-scripts/content/aaa.js", true);
+    gmm.loadFrameScript(SCRIPT_URL, true);
   },
 
   uninit : function() {
     let gmm =
       Cc["@mozilla.org/globalmessagemanager;1"].
         getService(Ci.nsIMessageListenerManager);
+    let wm =
+      Cc["@mozilla.org/appshell/window-mediator;1"].
+        getService(Ci.nsIWindowMediator);
+    let enumerator = wm.getEnumerator("navigator:browser");
 
-    gmm.removeDelayedFrameScript("chrome://amo-admin-scripts/content/aaa.js");
-    //gmm.sendAsyncMessage("aaa-unload");
+    // prevent future tabs from loading the script.
+    gmm.removeDelayedFrameScript(SCRIPT_URL);
+
+    // deactivate the script in all opened tabs.
+    while (enumerator.hasMoreElements()) {
+      let win = enumerator.getNext();
+      let isMobile = (null == win.gBrowser);
+      let browsers =
+        (isMobile ? win.BrowserApp.deck.tabs : win.gBrowser.browsers);
+
+      for (let i = 0; i < browsers.length; i++) {
+        let browser = (isMobile ? browsers[i].browser : browsers[i]);
+
+        browser.messageManager.sendAsyncMessage(UNLOAD_MSG);
+      }
+    }
   }
 };

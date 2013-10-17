@@ -33,7 +33,7 @@ var AAA_RE_FILE_VIEWER =
 var AAA_RE_ADDONS_MXR = /^\/addons\//i;
 var AAA_RE_MXR_LINK = /\/addons\/source\/([0-9]+)\//;
 
-var AAAContentScript = {
+let AAAContentScript = {
   _doc : null,
   _path : null,
   _href : null,
@@ -334,12 +334,13 @@ var AAAContentScript = {
   _modifyUserAdminSearchPage : function() {
     try {
       let xpath =
-        Cc["@mozilla.org/dom/xpath-evaluator;1"].
-          createInstance(Ci.nsIDOMXPathEvaluator);
+        Components.classes["@mozilla.org/dom/xpath-evaluator;1"].
+          createInstance(Components.interfaces.nsIDOMXPathEvaluator);
       let result =
         xpath.evaluate(
           "//table[@id='result_list']/tbody/tr/th/a", this._doc, null,
-          Ci.nsIDOMXPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+          Components.interfaces.nsIDOMXPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
+          null);
       let link;
       let userID;
       let newLink;
@@ -393,13 +394,14 @@ var AAAContentScript = {
   _addLinksToMXR : function() {
     try {
       let xpath =
-        Cc["@mozilla.org/dom/xpath-evaluator;1"].
-          createInstance(Ci.nsIDOMXPathEvaluator);
+        Components.classes["@mozilla.org/dom/xpath-evaluator;1"].
+          createInstance(Components.interfaces.nsIDOMXPathEvaluator);
       let result =
         xpath.evaluate(
           "//a[number(substring-before(substring(@href,16), '/')) > 0 and " +
           "string-length(substring-after(substring(@href,16), '/')) = 0]",
-          this._doc, null, Ci.nsIDOMXPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
+          this._doc, null,
+          Components.interfaces.nsIDOMXPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
           null);
       let link;
       let editLink;
@@ -511,12 +513,13 @@ var AAAContentScript = {
 
     try {
       let xpath =
-        Cc["@mozilla.org/dom/xpath-evaluator;1"].
-          createInstance(Ci.nsIDOMXPathEvaluator);
+        Components.classes["@mozilla.org/dom/xpath-evaluator;1"].
+          createInstance(Components.interfaces.nsIDOMXPathEvaluator);
       let xpathResult =
         xpath.evaluate(
           aXPathExp, this._doc.documentElement, null,
-          Ci.nsIDOMXPathResult.FIRST_ORDERED_NODE_TYPE, null);
+          Components.interfaces.nsIDOMXPathResult.FIRST_ORDERED_NODE_TYPE,
+          null);
 
       node = xpathResult.singleNodeValue;
     } catch (e) {
@@ -531,12 +534,12 @@ var AAAContentScript = {
   }
 };
 
-var AAALoadListener = function(aEvent) { AAAContentScript.run(aEvent); };
+let AAALoadListener = function(aEvent) { AAAContentScript.run(aEvent); };
 
 addEventListener("load", AAALoadListener, true);
 
 addMessageListener(
-  "aaa-unload",
+  "amo-admin-unload",
   function(aMessage) {
     removeEventListener("load", AAALoadListener, true);
   });
