@@ -1,11 +1,11 @@
 # The name of the extension.
-extension_name := aaa
+extension_name := e10sbug
 
 # The UUID of the extension.
-extension_uuid := aaa@xulforge.com
+extension_uuid := e10sbug@xulforge.com
 
 # The name of the profile dir where the extension can be installed.
-profile_dir := aaa-dev
+profile_dir := e10sbug-dev
 
 # The zip application to be used.
 ZIP := zip
