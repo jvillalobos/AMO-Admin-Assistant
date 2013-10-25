@@ -23,7 +23,7 @@
     <em:id>aaa@xulforge.com</em:id>
     <em:name>AMO Admin Assistant</em:name>
     <em:description>Some simple tools to facilitate AMO administration.</em:description>
-    <em:version>2.0</em:version>
+    <em:version>2.0.1</em:version>
     <em:creator>Jorge Villalobos</em:creator>
     <em:bootstrap>true</em:bootstrap>
     <em:type>2</em:type>
