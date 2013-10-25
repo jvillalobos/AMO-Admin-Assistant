@@ -60,7 +60,7 @@ let ContentScript = {
       let win = enumerator.getNext();
       let isMobile = (null == win.gBrowser);
       let browsers =
-        (isMobile ? win.BrowserApp.deck.tabs : win.gBrowser.browsers);
+        (isMobile ? win.BrowserApp.tabs : win.gBrowser.browsers);
 
       for (let i = 0; i < browsers.length; i++) {
         let browser = (isMobile ? browsers[i].browser : browsers[i]);
