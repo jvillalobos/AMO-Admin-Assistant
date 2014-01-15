@@ -26,7 +26,7 @@ var AAA_RE_BG_THEME_EDIT_PAGE =
 var AAA_RE_USER_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?user\//i;
 var AAA_RE_USER_ADMIN_PAGE =
-  /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?admin\/models\/auth\/user\/([0-9]+)?/i;
+  /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?admin\/models\/(?:(?:auth\/user\/([0-9]+)?)|(?:users\/userprofile\/))/i;
 var AAA_RE_IS_PREVIEW = /^https\:\/\/addons-dev\.allizom\.org/i;
 var AAA_RE_FILE_VIEWER =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?files\//i;
