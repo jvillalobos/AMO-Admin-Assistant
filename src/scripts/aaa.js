@@ -26,7 +26,8 @@ var AAA_RE_BG_THEME_EDIT_PAGE =
 var AAA_RE_USER_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?user\//i;
 var AAA_RE_USER_ADMIN_PAGE =
-  /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?admin\/models\/(?:(?:auth\/user\/([0-9]+)?)|(?:users\/userprofile\/))/i;
+  /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?admin\/models\/(?:(?:auth\/user\/)|(?:users\/userprofile\/))([0-9]+)?/i;
+var AAA_RE_GET_NUMBER = /\/([0-9]+)(\/|$)/;
 var AAA_RE_IS_PREVIEW = /^https\:\/\/addons-dev\.allizom\.org/i;
 var AAA_RE_FILE_VIEWER =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?files\//i;
@@ -346,18 +347,23 @@ let AAAContentScript = {
           Components.interfaces.nsIDOMXPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
           null);
       let link;
+      let match;
       let userID;
       let newLink;
 
       for (let i = 0 ; i < result.snapshotLength ; i++) {
         link = result.snapshotItem(i);
-        userID = link.getAttribute("href").replace("/", "");
-        // create a new link that points to the profile page.
-        newLink = this._doc.createElement("a");
-        newLink.setAttribute("href", ("/user/" + userID + "/"));
-        newLink.setAttribute("style", "margin-left: 0.5em;");
-        newLink.textContent = "[" + userID + "]";
-        link.parentNode.appendChild(newLink);
+        match = link.getAttribute("href").match(AAA_RE_GET_NUMBER, "ig");
+
+        if (match && (2 <= match.length)){
+          userID = match[1];
+          // create a new link that points to the profile page.
+          newLink = this._doc.createElement("a");
+          newLink.setAttribute("href", ("/user/" + userID + "/"));
+          newLink.setAttribute("style", "margin-left: 0.5em;");
+          newLink.textContent = "[" + userID + "]";
+          link.parentNode.appendChild(newLink);
+        }
       }
     } catch (e) {
       this._log("_modifyUserAdminSearchPage error:\n" + e);
