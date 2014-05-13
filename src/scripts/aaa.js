@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Jorge Villalobos
+ * Copyright 2014 Jorge Villalobos
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ var AAA_RE_IS_PREVIEW = /^https\:\/\/addons-dev\.allizom\.org/i;
 var AAA_RE_FILE_VIEWER =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?files\//i;
 var AAA_RE_ADDONS_MXR = /^\/addons\//i;
-var AAA_RE_MXR_LINK = /\/addons\/source\/([0-9]+)\//;
+var AAA_RE_MXR_LINK = /\/addons\/source\/([0-9]+)\/$/;
 
 let AAAContentScript = {
   _doc : null,
@@ -158,15 +158,14 @@ let AAAContentScript = {
   _modifyPersonaListing : function(aSlug) {
     let summaryNode = this._doc.getElementById("persona-summary");
     let personaNode =
-      this._getSingleXPath(
-        "//div[@class='persona-preview']/div[@data-browsertheme]");
+      this._doc.querySelector("div.persona-preview > div.data-browsertheme");
 
     if (null != personaNode) {
       let personaJSON = personaNode.getAttribute("data-browsertheme");
       let persona = JSON.parse(personaJSON);
       let headerLink = this._createLink("Header", persona.headerURL);
       let footerLink = this._createLink("Footer", persona.footerURL);
-      let insertionPoint = this._getSingleXPath("//div[@class='widgets']");
+      let insertionPoint = this._doc.querySelector("div.widgets");
 
       if (null != insertionPoint) {
         headerLink.setAttribute("class", "collection-add widget collection");
@@ -195,7 +194,7 @@ let AAAContentScript = {
 
     if (!is404) {
       this._showAddonId(addonNode);
-      insertionPoint = this._getSingleXPath("//div[@class='widgets']");
+      insertionPoint = this._doc.querySelector("div.widgets");
 
       if (null == insertionPoint) {
         this._log("There's no widgets section!");
@@ -203,7 +202,7 @@ let AAAContentScript = {
     } else {
       this._log("There is no add-on node. This may be a 404 page.");
 
-      let aside = this._getSingleXPath("//aside[@class='secondary']");
+      let aside = this._doc.querySelector("aside.secondary");
 
       if (null != aside) {
         // author-disabled add-on page.
@@ -211,7 +210,7 @@ let AAAContentScript = {
         insertionPoint.setAttribute("style", "margin-top: 1em;");
         aside.appendChild(insertionPoint);
       } else {
-        let errorMessage = this._getSingleXPath("//div[@class='primary']");
+        let errorMessage = this._doc.querySelector("div.primary");
 
         if (null != errorMessage) {
           // 404 pages (disabled, incomplete, or actually 404).
@@ -253,8 +252,7 @@ let AAAContentScript = {
    */
   _modifyEditPage : function(aSlug) {
     let result =
-      this._getSingleXPath(
-        "//ul[@class='refinements'][2]/li/a[contains(@href, '/addon/" + aSlug + "/')]");
+      this._doc.querySelector("ul.refinements:nth-child(2) > li > a");
 
     if (null != result) {
       let insertionPoint = result.parentNode;
@@ -280,12 +278,12 @@ let AAAContentScript = {
    * @param aSlug the slug that identifies the theme.
    */
   _modifyBgThemeEditPage : function(aSlug) {
-    let result = this._getSingleXPath("//div[@class='info']/p[2]");
+    let result = this._doc.querySelector("div.info > p:nth-child(2)");
 
     if (null != result) {
       let insertionPoint = result.parentNode;
       let container = this._doc.createElement("p");
-      let reviewLink = this._createMPReviewLink(aSlug);
+      let reviewLink = this._createThemeReviewLink(aSlug);
 
       container.appendChild(reviewLink);
       insertionPoint.insertBefore(container, result.nextSibling);
@@ -324,7 +322,7 @@ let AAAContentScript = {
    * @param aUserID the user ID from the page URL.
    */
   _modifyUserAdminPage : function(aUserID) {
-    let result = this._getSingleXPath("//a[@class='viewsitelink']");
+    let result = this._doc.querySelector("a.viewsitelink");
 
     if (null != result) {
       result.setAttribute("href", ("/user/" + aUserID + "/"));
@@ -338,14 +336,8 @@ let AAAContentScript = {
    */
   _modifyUserAdminSearchPage : function() {
     try {
-      let xpath =
-        Components.classes["@mozilla.org/dom/xpath-evaluator;1"].
-          createInstance(Components.interfaces.nsIDOMXPathEvaluator);
       let result =
-        xpath.evaluate(
-          "//table[@id='result_list']/tbody/tr/th/a", this._doc, null,
-          Components.interfaces.nsIDOMXPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
-          null);
+        this._doc.querySelectorAll("#result_list > tbody > tr > th > a");
       let link;
       let match;
       let userID;
@@ -376,7 +368,7 @@ let AAAContentScript = {
    */
   _showAddonId : function(aAddonNode) {
     let addonId = aAddonNode.getAttribute("data-id");
-    let titleNode = this._getSingleXPath("//h1[@class='addon']");
+    let titleNode = this._doc.querySelector("h1.addon");
     let numberSpan = this._doc.createElement("span");
     let spanContent = this._doc.createTextNode("[" + addonId + "]");
 
@@ -403,30 +395,19 @@ let AAAContentScript = {
    */
   _addLinksToMXR : function() {
     try {
-      let xpath =
-        Components.classes["@mozilla.org/dom/xpath-evaluator;1"].
-          createInstance(Components.interfaces.nsIDOMXPathEvaluator);
-      let result =
-        xpath.evaluate(
-          "//a[number(substring-before(substring(@href,16), '/')) > 0 and " +
-          "string-length(substring-after(substring(@href,16), '/')) = 0]",
-          this._doc, null,
-          Components.interfaces.nsIDOMXPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
-          null);
+      let result = this._doc.querySelectorAll("a");
       let link;
       let editLink;
       let match;
 
-      for (let i = 0 ; i < result.snapshotLength ; i++) {
-        link = result.snapshotItem(i);
+      for (let i = 0 ; i < result.length ; i++) {
+        link = result.item(i);
         match = link.getAttribute("href").match(AAA_RE_MXR_LINK, "ig");
 
         if (match && (2 <= match.length)) {
           editLink = this._createEditLink(match[1], "[Edit on AMO]");
           editLink.setAttribute("style", "margin-left: 0.4em;");
           link.parentNode.insertBefore(editLink, link.nextSibling);
-        } else {
-          this._log("Error getting add-on id from link.");
         }
       }
     } catch (e) {
@@ -481,10 +462,10 @@ let AAAContentScript = {
     return link;
   },
 
-  _createMPReviewLink : function(aId) {
+  _createThemeReviewLink : function(aId) {
     let link =
-      this._createMPLink(
-        "Review this Add-on", "/reviewers/themes/queue/single/$(PARAM)", aId);
+      this._createAMOLink(
+        "Review this Add-on", "/editors/themes/queue/single/$(PARAM)", aId);
 
     return link;
   },
@@ -492,17 +473,6 @@ let AAAContentScript = {
   _createAMOLink : function(aText, aPath, aParameter) {
     let isPreview = this._isPreview();
     let domain = (!isPreview ? "addons.mozilla.org" : "addons-dev.allizom.org");
-    let href = "https://" + domain + aPath;
-
-    href = href.replace("$(PARAM)", aParameter);
-
-    return this._createLink(aText, href);
-  },
-
-  _createMPLink : function(aText, aPath, aParameter) {
-    let isPreview = this._isPreview();
-    let domain =
-      (!isPreview ? "marketplace.mozilla.org" : "marketplace-dev.allizom.org");
     let href = "https://" + domain + aPath;
 
     href = href.replace("$(PARAM)", aParameter);
@@ -523,30 +493,6 @@ let AAAContentScript = {
     link.appendChild(linkContent);
 
     return link;
-  },
-
-  /**
-   * Gets a single node using an XPath expression.
-   */
-  _getSingleXPath : function(aXPathExp) {
-    let node = null;
-
-    try {
-      let xpath =
-        Components.classes["@mozilla.org/dom/xpath-evaluator;1"].
-          createInstance(Components.interfaces.nsIDOMXPathEvaluator);
-      let xpathResult =
-        xpath.evaluate(
-          aXPathExp, this._doc.documentElement, null,
-          Components.interfaces.nsIDOMXPathResult.FIRST_ORDERED_NODE_TYPE,
-          null);
-
-      node = xpathResult.singleNodeValue;
-    } catch (e) {
-      this._log("Error getting node using XPATH:\n" + e);
-    }
-
-    return node;
   },
 
   _log : function (aText) {
