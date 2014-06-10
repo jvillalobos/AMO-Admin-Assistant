@@ -18,7 +18,7 @@
 
 var AAA_RE_AMO_DOMAINS = /addons(?:-dev)?\.(?:mozilla|allizom)\.org/i;
 var AAA_RE_LISTING_PAGE =
-  /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?addon\/([^\/]+)/i;
+  /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?addon\/([^\/]+)(?:\/)?$/i;
 var AAA_RE_EDIT_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?developers\/addon\/([^\/]+)(?:\/([^\/]+))?/i;
 var AAA_RE_BG_THEME_EDIT_PAGE =
@@ -158,7 +158,7 @@ let AAAContentScript = {
   _modifyPersonaListing : function(aSlug) {
     let summaryNode = this._doc.getElementById("persona-summary");
     let personaNode =
-      this._doc.querySelector("div.persona-preview > div.data-browsertheme");
+      this._doc.querySelector("#persona-summary div.persona-preview > div");
 
     if (null != personaNode) {
       let personaJSON = personaNode.getAttribute("data-browsertheme");

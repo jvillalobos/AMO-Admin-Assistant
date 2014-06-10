@@ -23,7 +23,7 @@
     <em:id>aaa@xulforge.com</em:id>
     <em:name>AMO Admin Assistant</em:name>
     <em:description>Some simple tools to facilitate AMO administration.</em:description>
-    <em:version>2.2.1</em:version>
+    <em:version>2.2.2</em:version>
     <em:creator>Jorge Villalobos</em:creator>
     <em:bootstrap>true</em:bootstrap>
     <em:type>2</em:type>
@@ -33,7 +33,7 @@
       <Description>
         <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
         <em:minVersion>10.0</em:minVersion>
-        <em:maxVersion>31.*</em:maxVersion>
+        <em:maxVersion>32.*</em:maxVersion>
       </Description>
     </em:targetApplication>
 
@@ -42,7 +42,7 @@
       <Description>
         <em:id>{aa3c5121-dab2-40e2-81ca-7ea25febc110}</em:id>
         <em:minVersion>11.0</em:minVersion>
-        <em:maxVersion>31.*</em:maxVersion>
+        <em:maxVersion>32.*</em:maxVersion>
       </Description>
     </em:targetApplication>
 
