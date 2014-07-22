@@ -343,8 +343,8 @@ let AAAContentScript = {
       let userID;
       let newLink;
 
-      for (let i = 0 ; i < result.snapshotLength ; i++) {
-        link = result.snapshotItem(i);
+      for (let i = 0 ; i < result.length ; i++) {
+        link = result.item(i);
         match = link.getAttribute("href").match(AAA_RE_GET_NUMBER, "ig");
 
         if (match && (2 <= match.length)){
