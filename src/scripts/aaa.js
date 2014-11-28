@@ -505,7 +505,9 @@ let AAALoadListener = function(aEvent) { AAAContentScript.run(aEvent); };
 addEventListener("load", AAALoadListener, true);
 
 addMessageListener(
-  "amo-admin-unload",
+  "aaa@xulforge.com:unload",
   function(aMessage) {
-    removeEventListener("load", AAALoadListener, true);
+    if (aMessage.data == Components.stack.filename) {
+      removeEventListener("load", AAALoadListener, true);
+    }
   });
