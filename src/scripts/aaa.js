@@ -381,13 +381,11 @@ let AAAContentScript = {
    * Makes the source code viewer much wider so it is easier to read.
    */
   _widenSourceViewer : function() {
-    if (AAA_RE_FILE_VIEWER.test(this._doc.defaultView.location.href)) {
-      let rootNode = this._doc.body.firstElementChild;
-      let contentNode = this._doc.getElementById("content-wrapper");
+    let rootNode = this._doc.getElementById("tabzilla-wrapper").firstElementChild;
+    let contentNode = this._doc.getElementById("content-wrapper");
 
-      rootNode.setAttribute("style", "width: 90%; max-width: inherit;");
-      contentNode.style.paddingLeft = "15%";
-    }
+    rootNode.setAttribute("style", "width: 95%; max-width: inherit;");
+    contentNode.style.paddingLeft = "15%";
   },
 
   /**
