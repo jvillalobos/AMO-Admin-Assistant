@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Jorge Villalobos
+ * Copyright 2015 Jorge Villalobos
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -381,7 +381,8 @@ let AAAContentScript = {
    * Makes the source code viewer much wider so it is easier to read.
    */
   _widenSourceViewer : function() {
-    let rootNode = this._doc.getElementById("tabzilla-wrapper").firstElementChild;
+    let rootNode =
+      this._doc.getElementById("tabzilla-wrapper").firstElementChild;
     let contentNode = this._doc.getElementById("content-wrapper");
 
     rootNode.setAttribute("style", "width: 95%; max-width: inherit;");
