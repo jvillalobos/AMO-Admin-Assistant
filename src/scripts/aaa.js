@@ -301,16 +301,12 @@ let AAAContentScript = {
     if (null != manageButton) {
       let manageURL = manageButton.getAttribute("href");
       let userId = manageURL.substring(manageURL.lastIndexOf("/") + 1);
-      let forumLink = this._createForumUserLink(userId);
       let deleteLink = this._createDeleteUserLink(userId);
 
-      forumLink.setAttribute("class", "button");
-      forumLink.setAttribute("style", "margin-right: 3px;");
       deleteLink.setAttribute("class", "button");
       deleteLink.setAttribute(
         "style",
         "background: linear-gradient(rgb(225, 15, 0), rgb(191, 13, 0)) repeat scroll 0% 0% rgb(87, 132, 191)");
-      manageButton.parentNode.appendChild(forumLink);
       manageButton.parentNode.appendChild(deleteLink);
     } else {
       this._log("Insertion point could not be found.");
@@ -439,16 +435,6 @@ let AAAContentScript = {
     let link =
       this._createAMOLink(
         "Delete user", "/admin/models/users/userprofile/$(PARAM)/delete/", aId);
-
-    return link;
-  },
-
-  _createForumUserLink : function(aId) {
-    let link =
-      this._createLink(
-        "Forum profile",
-        "https://forums.mozilla.org/addons/memberlist.php?mode=viewprofile&u=" +
-        aId);
 
     return link;
   },
