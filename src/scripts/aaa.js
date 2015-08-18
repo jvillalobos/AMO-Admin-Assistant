@@ -28,7 +28,6 @@ var AAA_RE_USER_PAGE =
 var AAA_RE_USER_ADMIN_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?admin\/models\/(?:(?:auth\/user\/)|(?:users\/userprofile\/))([0-9]+)?/i;
 var AAA_RE_GET_NUMBER = /\/([0-9]+)(\/|$)/;
-var AAA_RE_IS_PREVIEW = /^https\:\/\/addons-dev\.allizom\.org/i;
 var AAA_RE_FILE_VIEWER =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?files\//i;
 var AAA_RE_ADDONS_MXR = /^\/addons\//i;
@@ -410,10 +409,6 @@ let AAAContentScript = {
     }
   },
 
-  _isPreview : function() {
-    return AAA_RE_IS_PREVIEW.test(this._href);
-  },
-
   _createAdminLink : function(aId) {
     let link =
       this._createAMOLink(
@@ -456,9 +451,7 @@ let AAAContentScript = {
   },
 
   _createAMOLink : function(aText, aPath, aParameter) {
-    let isPreview = this._isPreview();
-    let domain = (!isPreview ? "addons.mozilla.org" : "addons-dev.allizom.org");
-    let href = "https://" + domain + aPath;
+    let href = aPath;
 
     href = href.replace("$(PARAM)", aParameter);
 
