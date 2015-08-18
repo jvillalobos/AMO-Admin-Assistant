@@ -333,13 +333,11 @@ let AAAContentScript = {
     try {
       let result =
         this._doc.querySelectorAll("#result_list > tbody > tr > th > a");
-      let link;
       let match;
       let userID;
       let newLink;
 
-      for (let i = 0 ; i < result.length ; i++) {
-        link = result.item(i);
+      for (let link of result) {
         match = link.getAttribute("href").match(AAA_RE_GET_NUMBER, "ig");
 
         if (match && (2 <= match.length)){
@@ -390,12 +388,10 @@ let AAAContentScript = {
   _addLinksToMXR : function() {
     try {
       let result = this._doc.querySelectorAll("a");
-      let link;
       let editLink;
       let match;
 
-      for (let i = 0 ; i < result.length ; i++) {
-        link = result.item(i);
+      for (let link of result) {
         match = link.getAttribute("href").match(AAA_RE_MXR_LINK, "ig");
 
         if (match && (2 <= match.length)) {
@@ -421,7 +417,7 @@ let AAAContentScript = {
     let link =
       this._createAMOLink(
         ((null != aText) ? aText : "Edit this Add-on"),
-        "/developers/addon/$(PARAM)/edit/", aId);
+        "/developers/addon/$(PARAM)/edit/", aId, true);
 
     return link;
   },
@@ -450,12 +446,24 @@ let AAAContentScript = {
     return link;
   },
 
-  _createAMOLink : function(aText, aPath, aParameter) {
-    let href = aPath;
+  /**
+   * Creates an 'a' node pointing to AMO.
+   * @param aText the text in the link.
+   * @param aPath the relative path to use.
+   * @param aParameter the parameter value to replace in the path.
+   * @param aForceAMO whether to force if addons.mozilla.org should be the
+   * domain in the link.
+   */
+  _createAMOLink : function(aText, aPath, aParameter, aForceAMO) {
+    let href;
 
-    href = href.replace("$(PARAM)", aParameter);
+    if (aForceAMO) {
+      href = "https://addons.mozilla.org" + aPath;
+    } else {
+      href = aPath;
+    }
 
-    return this._createLink(aText, href);
+    return this._createLink(aText, href.replace("$(PARAM)", aParameter));
   },
 
   /**
