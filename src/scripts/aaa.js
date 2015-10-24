@@ -27,6 +27,10 @@ var AAA_RE_USER_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?user\//i;
 var AAA_RE_USER_ADMIN_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?admin\/models\/(?:(?:auth\/user\/)|(?:users\/userprofile\/))([0-9]+)?/i;
+var AAA_RE_COLLECTION_PAGE =
+  /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?collections\//i;
+var AAA_RE_COLLECTION_ID =
+  /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?collections\/((?:[^\/]+)\/(?:[^\/]+))/i;
 var AAA_RE_GET_NUMBER = /\/([0-9]+)(\/|$)/;
 var AAA_RE_FILE_VIEWER =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?files\//i;
@@ -123,6 +127,9 @@ let AAAContentScript = {
     } else if (AAA_RE_USER_PAGE.test(this._path)) {
       this._log("Found a user profile page.");
       this._addLinksToUserPage();
+    } else if (AAA_RE_COLLECTION_PAGE.test(this._path)) {
+      this._log("Found a collection page.");
+      this._addToCollectionPage();
     }
   },
 
@@ -309,6 +316,31 @@ let AAAContentScript = {
       manageButton.parentNode.appendChild(deleteLink);
     } else {
       this._log("Insertion point could not be found.");
+    }
+  },
+
+  /**
+   * Adds delete buttons to collection pages.
+   */
+  _addToCollectionPage : function() {
+    let widgetBoxes =
+      this._doc.querySelectorAll("div.collection_widgets.condensed.widgets");
+
+    for (let box of widgetBoxes) {
+      let watchURL = box.firstElementChild.getAttribute("href");
+      let matchURL = watchURL.match(AAA_RE_COLLECTION_ID, "ig");
+
+      if (matchURL && (2 <= matchURL.length)) {
+        let collectionID = matchURL[1];
+        let link = this._doc.createElement("a");
+        let label = this._doc.createTextNode("Delete");
+
+        link.setAttribute("href", `/collections/${collectionID}/delete`);
+        link.appendChild(label);
+        box.appendChild(link);
+      } else {
+        this._log("Invalid collection URL.");
+      }
     }
   },
 
