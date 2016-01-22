@@ -1,0 +1,26 @@
+{
+  "manifest_version": 2,
+  "name": "AMO Admin Assistant",
+  "version": "3.0",
+
+  "description": "Some simple tools to facilitate AMO administration.",
+  "homepage_url": "https://github.com/jvillalobos/AMO-Admin-Assistant",
+
+  "applications": {
+    "gecko": {
+      "id": "aaa@xulforge.com",
+      "strict_min_version": "45.0"
+    }
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://addons.mozilla.org/*",
+        "https://addons.allizom.org/*",
+        "https://addons-dev.allizom.org/*",
+        "https://mxr.mozilla.org/addons/*" ],
+      "js": [ "scripts/aaa.js" ]
+    }
+  ]
+}
