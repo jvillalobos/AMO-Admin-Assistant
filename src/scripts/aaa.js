@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Jorge Villalobos
+ * Copyright 2016 Jorge Villalobos
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,50 +16,42 @@
 
 "use strict";
 
-var AAA_RE_AMO_DOMAINS = /addons(?:-dev)?\.(?:mozilla|allizom)\.org/i;
-var AAA_RE_LISTING_PAGE =
+const AAA_RE_AMO_DOMAINS = /addons(?:-dev)?\.(?:mozilla|allizom)\.org/i;
+const AAA_RE_LISTING_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?addon\/([^\/]+)(?:\/)?$/i;
-var AAA_RE_EDIT_PAGE =
+const AAA_RE_EDIT_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?developers\/addon\/([^\/]+)(?:\/([^\/]+))?/i;
-var AAA_RE_BG_THEME_EDIT_PAGE =
+const AAA_RE_BG_THEME_EDIT_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?developers\/theme\/([^\/]+)(?:\/([^\/]+))?/i;
-var AAA_RE_USER_PAGE =
+const AAA_RE_USER_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?user\//i;
-var AAA_RE_USER_ADMIN_PAGE =
+const AAA_RE_USER_ADMIN_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?admin\/models\/(?:(?:auth\/user\/)|(?:users\/userprofile\/))([0-9]+)?/i;
-var AAA_RE_COLLECTION_PAGE =
+const AAA_RE_COLLECTION_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?collections\//i;
-var AAA_RE_COLLECTION_ID =
+const AAA_RE_COLLECTION_ID =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?collections\/((?:[^\/]+)\/(?:[^\/]+))/i;
-var AAA_RE_GET_NUMBER = /\/([0-9]+)(\/|$)/;
-var AAA_RE_FILE_VIEWER =
+const AAA_RE_GET_NUMBER = /\/([0-9]+)(\/|$)/;
+const AAA_RE_FILE_VIEWER =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?files\//i;
-var AAA_RE_ADDONS_MXR = /^\/addons\//i;
-var AAA_RE_MXR_LINK = /\/addons\/source\/([0-9]+)\/$/;
+const AAA_RE_ADDONS_MXR = /^\/addons\//i;
+const AAA_RE_MXR_LINK = /\/addons\/source\/([0-9]+)\/$/;
 
 let AAAContentScript = {
-  _doc : null,
   _path : null,
   _href : null,
 
   /**
    * Runs the content script on this page.
-   * @param aEvent the load event fired from the page.
    */
-  run : function(aEvent) {
-    this._doc = aEvent.originalTarget;
+  run : function() {
+    this._path = document.location.pathname;
+    this._href = document.location.href;
 
-    // do a quick domain test to filter out pages were aren't interested in.
-    if ((null != this._doc) && (null != this._doc.location) &&
-        (null != this._doc.location.hostname)) {
-      this._path = this._doc.location.pathname;
-      this._href = this._doc.location.href;
-
-      if (AAA_RE_AMO_DOMAINS.test(this._doc.location.hostname)) {
-        this._runAMO();
-      } else if ("mxr.mozilla.org" == this._doc.location.hostname) {
-        this._runMXR();
-      }
+    if (AAA_RE_AMO_DOMAINS.test(document.location.hostname)) {
+      this._runAMO();
+    } else if ("mxr.mozilla.org" == document.location.hostname) {
+      this._runMXR();
     }
   },
 
@@ -149,7 +141,7 @@ let AAAContentScript = {
    */
   _modifyListingPage : function(aSlug) {
     let isPersonaListing =
-      (null != this._doc.getElementById("persona-summary"));
+      (null != document.getElementById("persona-summary"));
 
     if (isPersonaListing) {
       this._modifyPersonaListing(aSlug);
@@ -162,16 +154,16 @@ let AAAContentScript = {
    * Adds a few useful admin links to Persona listing pages.
    */
   _modifyPersonaListing : function(aSlug) {
-    let summaryNode = this._doc.getElementById("persona-summary");
+    let summaryNode = document.getElementById("persona-summary");
     let personaNode =
-      this._doc.querySelector("#persona-summary div.persona-preview > div");
+      document.querySelector("#persona-summary div.persona-preview > div");
 
     if (null != personaNode) {
       let personaJSON = personaNode.getAttribute("data-browsertheme");
       let persona = JSON.parse(personaJSON);
       let headerLink = this._createLink("Header", persona.headerURL);
       let footerLink = this._createLink("Footer", persona.footerURL);
-      let insertionPoint = this._doc.querySelector("div.widgets");
+      let insertionPoint = document.querySelector("div.widgets");
 
       if (null != insertionPoint) {
         headerLink.setAttribute("class", "collection-add widget collection");
@@ -192,7 +184,7 @@ let AAAContentScript = {
    * exposes the internal add-on id.
    */
   _modifyRegularListing : function(aSlug) {
-    let addonNode = this._doc.getElementById("addon");
+    let addonNode = document.getElementById("addon");
     let is404 = (null == addonNode);
     let adminLink = this._createAdminLink(aSlug);
     let reviewLink = this._createAMOReviewLink(aSlug);
@@ -200,7 +192,7 @@ let AAAContentScript = {
 
     if (!is404) {
       this._showAddonId(addonNode);
-      insertionPoint = this._doc.querySelector("div.widgets");
+      insertionPoint = document.querySelector("div.widgets");
 
       if (null == insertionPoint) {
         this._log("There's no widgets section!");
@@ -208,19 +200,19 @@ let AAAContentScript = {
     } else {
       this._log("There is no add-on node. This may be a 404 page.");
 
-      let aside = this._doc.querySelector("aside.secondary");
+      let aside = document.querySelector("aside.secondary");
 
       if (null != aside) {
         // author-disabled add-on page.
-        insertionPoint = this._doc.createElement("div");
+        insertionPoint = document.createElement("div");
         insertionPoint.setAttribute("style", "margin-top: 1em;");
         aside.appendChild(insertionPoint);
       } else {
-        let errorMessage = this._doc.querySelector("div.primary");
+        let errorMessage = document.querySelector("div.primary");
 
         if (null != errorMessage) {
           // 404 pages (disabled, incomplete, or actually 404).
-          insertionPoint = this._doc.createElement("div");
+          insertionPoint = document.createElement("div");
           insertionPoint.setAttribute(
             "style", "margin-top: 1em; margin-bottom: 1em;");
           errorMessage.insertBefore(
@@ -234,7 +226,7 @@ let AAAContentScript = {
       insertionPoint.appendChild(adminLink);
 
       if (is404) {
-        insertionPoint.appendChild(this._doc.createElement("br"));
+        insertionPoint.appendChild(document.createElement("br"));
       }
 
       reviewLink.setAttribute("class", "collection-add widget collection");
@@ -244,7 +236,7 @@ let AAAContentScript = {
         let editLink = this._createEditLink(aSlug);
 
         editLink.setAttribute("class", "collection-add widget collection");
-        insertionPoint.appendChild(this._doc.createElement("br"));
+        insertionPoint.appendChild(document.createElement("br"));
         insertionPoint.appendChild(editLink);
       }
     } else {
@@ -258,11 +250,11 @@ let AAAContentScript = {
    */
   _modifyEditPage : function(aSlug) {
     let result =
-      this._doc.querySelector("ul.refinements:nth-child(2) > li > a");
+      document.querySelector("ul.refinements:nth-child(2) > li > a");
 
     if (null != result) {
       let insertionPoint = result.parentNode;
-      let container = this._doc.createElement("li");
+      let container = document.createElement("li");
       let adminLink = this._createAdminLink(aSlug);
       let reviewLink = this._createAMOReviewLink(aSlug);
 
@@ -270,7 +262,7 @@ let AAAContentScript = {
       insertionPoint.insertBefore(
         container, insertionPoint.firstChild.nextSibling);
 
-      container = this._doc.createElement("li");
+      container = document.createElement("li");
       container.appendChild(reviewLink);
       insertionPoint.insertBefore(
         container, insertionPoint.firstChild.nextSibling);
@@ -284,11 +276,11 @@ let AAAContentScript = {
    * @param aSlug the slug that identifies the theme.
    */
   _modifyBgThemeEditPage : function(aSlug) {
-    let result = this._doc.querySelector("div.info > p:nth-child(2)");
+    let result = document.querySelector("div.info > p:nth-child(2)");
 
     if (null != result) {
       let insertionPoint = result.parentNode;
-      let container = this._doc.createElement("p");
+      let container = document.createElement("p");
       let reviewLink = this._createThemeReviewLink(aSlug);
 
       container.appendChild(reviewLink);
@@ -302,7 +294,7 @@ let AAAContentScript = {
    * Adds an delete link to user pages.
    */
   _addLinksToUserPage : function() {
-    let manageButton = this._doc.getElementById("manage-user");
+    let manageButton = document.getElementById("manage-user");
 
     if (null != manageButton) {
       let manageURL = manageButton.getAttribute("href");
@@ -324,7 +316,7 @@ let AAAContentScript = {
    */
   _addToCollectionPage : function() {
     let widgetBoxes =
-      this._doc.querySelectorAll("div.collection_widgets.condensed.widgets");
+      document.querySelectorAll("div.collection_widgets.condensed.widgets");
 
     for (let box of widgetBoxes) {
       let watchURL = box.firstElementChild.getAttribute("href");
@@ -332,8 +324,8 @@ let AAAContentScript = {
 
       if (matchURL && (2 <= matchURL.length)) {
         let collectionID = matchURL[1];
-        let link = this._doc.createElement("a");
-        let label = this._doc.createTextNode("Delete");
+        let link = document.createElement("a");
+        let label = document.createTextNode("Delete");
 
         link.setAttribute("href", `/collections/${collectionID}/delete`);
         link.appendChild(label);
@@ -349,7 +341,7 @@ let AAAContentScript = {
    * @param aUserID the user ID from the page URL.
    */
   _modifyUserAdminPage : function(aUserID) {
-    let result = this._doc.querySelector("a.viewsitelink");
+    let result = document.querySelector("a.viewsitelink");
 
     if (null != result) {
       result.setAttribute("href", ("/user/" + aUserID + "/"));
@@ -364,7 +356,7 @@ let AAAContentScript = {
   _modifyUserAdminSearchPage : function() {
     try {
       let result =
-        this._doc.querySelectorAll("#result_list > tbody > tr > th > a");
+        document.querySelectorAll("#result_list > tbody > tr > th > a");
       let match;
       let userID;
       let newLink;
@@ -375,7 +367,7 @@ let AAAContentScript = {
         if (match && (2 <= match.length)){
           userID = match[1];
           // create a new link that points to the profile page.
-          newLink = this._doc.createElement("a");
+          newLink = document.createElement("a");
           newLink.setAttribute("href", ("/user/" + userID + "/"));
           newLink.setAttribute("style", "margin-left: 0.5em;");
           newLink.textContent = "[" + userID + "]";
@@ -393,9 +385,9 @@ let AAAContentScript = {
    */
   _showAddonId : function(aAddonNode) {
     let addonId = aAddonNode.getAttribute("data-id");
-    let titleNode = this._doc.querySelector("h1.addon");
-    let numberSpan = this._doc.createElement("span");
-    let spanContent = this._doc.createTextNode("[" + addonId + "]");
+    let titleNode = document.querySelector("h1.addon");
+    let numberSpan = document.createElement("span");
+    let spanContent = document.createTextNode("[" + addonId + "]");
 
     numberSpan.appendChild(spanContent);
     numberSpan.setAttribute("class", "version-number");
@@ -407,8 +399,8 @@ let AAAContentScript = {
    */
   _widenSourceViewer : function() {
     let rootNode =
-      this._doc.getElementById("tabzilla-wrapper").firstElementChild;
-    let contentNode = this._doc.getElementById("content-wrapper");
+      document.getElementById("tabzilla-wrapper").firstElementChild;
+    let contentNode = document.getElementById("content-wrapper");
 
     rootNode.setAttribute("style", "width: 95%; max-width: inherit;");
     contentNode.style.paddingLeft = "15%";
@@ -419,7 +411,7 @@ let AAAContentScript = {
    */
   _addLinksToMXR : function() {
     try {
-      let result = this._doc.querySelectorAll("a");
+      let result = document.querySelectorAll("a");
       let editLink;
       let match;
 
@@ -504,8 +496,8 @@ let AAAContentScript = {
    * @param aURL the URL the link points to.
    */
   _createLink : function(aText, aURL) {
-    let link = this._doc.createElement("a");
-    let linkContent = this._doc.createTextNode(aText);
+    let link = document.createElement("a");
+    let linkContent = document.createTextNode(aText);
 
     link.setAttribute("href", aURL);
     link.appendChild(linkContent);
@@ -514,18 +506,8 @@ let AAAContentScript = {
   },
 
   _log : function (aText) {
-    this._doc.defaultView.console.log(aText);
+    console.log(aText);
   }
 };
 
-let AAALoadListener = function(aEvent) { AAAContentScript.run(aEvent); };
-
-addEventListener("load", AAALoadListener, true);
-
-addMessageListener(
-  "aaa@xulforge.com:unload",
-  function(aMessage) {
-    if (aMessage.data == Components.stack.filename) {
-      removeEventListener("load", AAALoadListener, true);
-    }
-  });
+AAAContentScript.run();
