@@ -245,15 +245,18 @@ let AAAContentScript = {
   },
 
   /**
-   * Adds a few useful admin links to edit pages.
+   * Adds a few useful admin links to edit pages. Makes deletion dialog easier
+   * use.
    * @param aSlug the slug that identifies the add-on.
    */
   _modifyEditPage : function(aSlug) {
-    let result =
+    let editNavigation =
       document.querySelector("ul.refinements:nth-child(2) > li > a");
+    let deleteDialog =
+      document.querySelector("#modal-delete input[name=slug]");
 
-    if (null != result) {
-      let insertionPoint = result.parentNode;
+    if (null != editNavigation) {
+      let insertionPoint = editNavigation.parentNode;
       let container = document.createElement("li");
       let adminLink = this._createAdminLink(aSlug);
       let reviewLink = this._createAMOReviewLink(aSlug);
@@ -267,7 +270,19 @@ let AAAContentScript = {
       insertionPoint.insertBefore(
         container, insertionPoint.firstChild.nextSibling);
     } else {
-      this._log("Insertion point could not be found.");
+      this._log("Navigation insertion point could not be found.");
+    }
+
+    if (null != deleteDialog) {
+      let reason = document.getElementById("id_reason");
+
+      deleteDialog.value = deleteDialog.getAttribute("placeholder");
+
+      if (null != reason) {
+          reason.value = "I'm an admin, bitch!";
+      }
+    } else {
+      this._log("Delete dialog could not be found.");
     }
   },
 
