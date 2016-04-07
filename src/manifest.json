@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "AMO Admin Assistant",
-  "version": "3.1",
+  "version": "3.2",
 
   "description": "Some simple tools to facilitate AMO administration.",
   "homepage_url": "https://github.com/jvillalobos/AMO-Admin-Assistant",

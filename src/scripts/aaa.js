@@ -184,6 +184,7 @@ let AAAContentScript = {
    * exposes the internal add-on id.
    */
   _modifyRegularListing : function(aSlug) {
+    let aside = document.querySelector("aside.secondary");
     let addonNode = document.getElementById("addon");
     let is404 = (null == addonNode);
     let adminLink = this._createAdminLink(aSlug);
@@ -192,15 +193,9 @@ let AAAContentScript = {
 
     if (!is404) {
       this._showAddonId(addonNode);
-      insertionPoint = document.querySelector("div.widgets");
-
-      if (null == insertionPoint) {
-        this._log("There's no widgets section!");
-      }
+      insertionPoint = aside;
     } else {
       this._log("There is no add-on node. This may be a 404 page.");
-
-      let aside = document.querySelector("aside.secondary");
 
       if (null != aside) {
         // author-disabled add-on page.
@@ -222,22 +217,13 @@ let AAAContentScript = {
     }
 
     if (null != insertionPoint) {
-      adminLink.setAttribute("class", "collection-add widget collection");
-      insertionPoint.appendChild(adminLink);
-
-      if (is404) {
-        insertionPoint.appendChild(document.createElement("br"));
-      }
-
-      reviewLink.setAttribute("class", "collection-add widget collection");
-      insertionPoint.appendChild(reviewLink);
+      this._appendListingLink(insertionPoint, adminLink, is404);
+      this._appendListingLink(insertionPoint, reviewLink, is404);
 
       if (is404) {
         let editLink = this._createEditLink(aSlug);
 
-        editLink.setAttribute("class", "collection-add widget collection");
-        insertionPoint.appendChild(document.createElement("br"));
-        insertionPoint.appendChild(editLink);
+        this._appendListingLink(insertionPoint, editLink, is404);
       }
     } else {
       this._log("Insertion point could not be found.");
@@ -287,7 +273,7 @@ let AAAContentScript = {
   },
 
   /**
-   * Adds a few useful admin links to background theme edit pages.
+   * Adds a review link to background theme edit pages.
    * @param aSlug the slug that identifies the theme.
    */
   _modifyBgThemeEditPage : function(aSlug) {
@@ -442,6 +428,26 @@ let AAAContentScript = {
     } catch (e) {
       this._log("_addLinksToMXR error:\n" + e);
     }
+  },
+
+  /**
+   * Inserts a link to a listing page.
+   * @param aParent the parent node.
+   * @param aLink the link node to insert.
+   * @param aIs404 true if this is a 404 page, false otherwise.
+   */
+  _appendListingLink : function(aParent, aLink, aIs404) {
+    let container = document.createElement("p");
+
+    if (aIs404) {
+      aLink.setAttribute("class", "collection-add widget collection");
+    } else {
+      aLink.setAttribute("class", "button prominent");
+      container.setAttribute("class", "manage-button");
+    }
+
+    container.appendChild(aLink);
+    aParent.appendChild(container);
   },
 
   _createAdminLink : function(aId) {
