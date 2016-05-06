@@ -131,7 +131,30 @@ let AAAContentScript = {
   _runMXR : function() {
     if (AAA_RE_ADDONS_MXR.test(this._path)) {
       this._log("Found an add-ons MXR page.");
-      this._addLinksToMXR();
+
+      try {
+        let result = document.querySelectorAll("a");
+        let editLink;
+        let reviewLink;
+        let match;
+
+        for (let link of result) {
+          match = link.getAttribute("href").match(AAA_RE_MXR_LINK, "ig");
+
+          if (match && (2 <= match.length)) {
+            editLink = this._createEditLink(match[1], "[Edit]");
+            link.parentNode.insertBefore(editLink, link.nextSibling);
+
+            reviewLink =
+              this._createAMOLink(
+                "[Review]", "/editors/review/$(PARAM)", match[1], true);
+            reviewLink.setAttribute("style", "margin-left: 0.4em;");
+            link.parentNode.insertBefore(reviewLink, link.nextSibling);
+          }
+        }
+      } catch (e) {
+        this._log("_addLinksToMXR error:\n" + e);
+      }
     }
   },
 
@@ -414,29 +437,6 @@ let AAAContentScript = {
 
     rootNode.setAttribute("style", "width: 95%; max-width: inherit;");
     contentNode.style.paddingLeft = "15%";
-  },
-
-  /**
-   * Adds add-on links to AMO from the add-ons MXR.
-   */
-  _addLinksToMXR : function() {
-    try {
-      let result = document.querySelectorAll("a");
-      let editLink;
-      let match;
-
-      for (let link of result) {
-        match = link.getAttribute("href").match(AAA_RE_MXR_LINK, "ig");
-
-        if (match && (2 <= match.length)) {
-          editLink = this._createEditLink(match[1], "[Edit on AMO]");
-          editLink.setAttribute("style", "margin-left: 0.4em;");
-          link.parentNode.insertBefore(editLink, link.nextSibling);
-        }
-      }
-    } catch (e) {
-      this._log("_addLinksToMXR error:\n" + e);
-    }
   },
 
   /**
