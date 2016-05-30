@@ -37,6 +37,9 @@ const AAA_RE_FILE_VIEWER =
 const AAA_RE_ADDONS_MXR = /^\/addons\//i;
 const AAA_RE_MXR_LINK = /\/addons\/source\/([0-9]+)\/$/;
 
+const GA_TRACKING_ID = "UA-78559509-1";
+const GA_CLIENT_ID = "4FB5D5BF-B582-41AD-9BDF-1EC789AE6544";
+
 let AAAContentScript = {
   _path : null,
   _href : null,
@@ -131,6 +134,7 @@ let AAAContentScript = {
   _runMXR : function() {
     if (AAA_RE_ADDONS_MXR.test(this._path)) {
       this._log("Found an add-ons MXR page.");
+      this._reportGA("MXR");
 
       try {
         let result = document.querySelectorAll("a");
@@ -177,6 +181,8 @@ let AAAContentScript = {
    * Adds a few useful admin links to Persona listing pages.
    */
   _modifyPersonaListing : function(aSlug) {
+    this._reportGA("ThemeListing");
+
     let summaryNode = document.getElementById("persona-summary");
     let personaNode =
       document.querySelector("#persona-summary div.persona-preview > div");
@@ -207,6 +213,8 @@ let AAAContentScript = {
    * exposes the internal add-on id.
    */
   _modifyRegularListing : function(aSlug) {
+    this._reportGA("Listing");
+
     let aside = document.querySelector("aside.secondary");
     let addonNode = document.getElementById("addon");
     let is404 = (null == addonNode);
@@ -259,6 +267,8 @@ let AAAContentScript = {
    * @param aSlug the slug that identifies the add-on.
    */
   _modifyEditPage : function(aSlug) {
+    this._reportGA("Edit");
+
     let editNavigation =
       document.querySelector("ul.refinements:nth-child(2) > li > a");
 
@@ -288,6 +298,8 @@ let AAAContentScript = {
    * @param aSlug the slug that identifies the theme.
    */
   _modifyBgThemeEditPage : function(aSlug) {
+    this._reportGA("EditTheme");
+
     let result = document.querySelector("div.info > p:nth-child(2)");
 
     if (null != result) {
@@ -308,6 +320,8 @@ let AAAContentScript = {
    * Adds an delete link to user pages.
    */
   _addLinksToUserPage : function() {
+    this._reportGA("User");
+
     let manageButton = document.getElementById("manage-user");
 
     if (null != manageButton) {
@@ -329,6 +343,8 @@ let AAAContentScript = {
    * Adds delete buttons to collection pages.
    */
   _addToCollectionPage : function() {
+    this._reportGA("Collection");
+
     let widgetBoxes =
       document.querySelectorAll("div.collection_widgets.condensed.widgets");
 
@@ -537,6 +553,23 @@ let AAAContentScript = {
 
   _log : function (aText) {
     console.log(aText);
+  },
+
+  /**
+   * Reports the event to Google Analytics.
+   */
+  _reportGA : function(aType) {
+    try {
+      let request = new XMLHttpRequest();
+      let message =
+        "v=1&tid=" + GA_TRACKING_ID + "&cid= " + GA_CLIENT_ID + "&aip=1" +
+        "&ds=add-on&t=event&ec=AAA&ea=" + aType;
+
+      request.open("POST", "https://www.google-analytics.com/collect", true);
+      request.send(message);
+    } catch (e) {
+      this._log("Error sending report to Google Analytics.\n" + e);
+    }
   }
 };
 
