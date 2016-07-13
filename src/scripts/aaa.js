@@ -34,8 +34,8 @@ const AAA_RE_COLLECTION_ID =
 const AAA_RE_GET_NUMBER = /\/([0-9]+)(\/|$)/;
 const AAA_RE_FILE_VIEWER =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?files\//i;
-const AAA_RE_ADDONS_MXR = /^\/addons\//i;
-const AAA_RE_MXR_LINK = /\/addons\/source\/([0-9]+)\/$/;
+const AAA_RE_ADDONS_DXR = /^\/addons\//i;
+const AAA_RE_DXR_LINK = /\/addons\/source\/([0-9]+)\/?$/;
 
 let AAAContentScript = {
   _path : null,
@@ -50,8 +50,8 @@ let AAAContentScript = {
 
     if (AAA_RE_AMO_DOMAINS.test(document.location.hostname)) {
       this._runAMO();
-    } else if ("mxr.mozilla.org" == document.location.hostname) {
-      this._runMXR();
+    } else if ("dxr.mozilla.org" == document.location.hostname) {
+      this._runDXR();
     }
   },
 
@@ -126,34 +126,60 @@ let AAAContentScript = {
   },
 
   /**
-   * Run the MXR handler.
+   * Run the DXR handler.
    */
-  _runMXR : function() {
-    if (AAA_RE_ADDONS_MXR.test(this._path)) {
-      this._log("Found an add-ons MXR page.");
+  _runDXR : function() {
+    if (AAA_RE_ADDONS_DXR.test(this._path)) {
+      this._log("Found an add-ons DXR page.");
 
       try {
-        let result = document.querySelectorAll("a");
-        let editLink;
-        let reviewLink;
-        let match;
-
-        for (let link of result) {
-          match = link.getAttribute("href").match(AAA_RE_MXR_LINK, "ig");
-
-          if (match && (2 <= match.length)) {
-            editLink = this._createEditLink(match[1], "[Edit]");
-            link.parentNode.insertBefore(editLink, link.nextSibling);
-
-            reviewLink =
-              this._createAMOLink(
-                "[Review]", "/editors/review/$(PARAM)", match[1], true);
-            reviewLink.setAttribute("style", "margin-left: 0.4em;");
-            link.parentNode.insertBefore(reviewLink, link.nextSibling);
+        let that = this;
+        let contentNode = document.getElementById("content");
+        let observer = new MutationObserver(function(aMutations) {
+          for (let mutation of aMutations) {
+            for (let node of mutation.addedNodes) {
+              if (node.ELEMENT_NODE == node.nodeType) {
+                that._log("Node: " + node);
+                that._addDXRLinks(node);
+              }
+            }
           }
+        });
+
+        // add links to current content (skip it for the front page because
+       // it's to link-heavy and it doesn't work very well)
+        if ("/addons/source/" != this._path) {
+          this._addDXRLinks(document.documentElement);
         }
+        // add links to new content being added.
+        observer.observe(contentNode, { childList : true });
       } catch (e) {
-        this._log("_addLinksToMXR error:\n" + e);
+        this._log("_addLinksToDXR error:\n" + e);
+      }
+    }
+  },
+
+  /**
+   * Adds AMO links from DXR pages for all nodes under aNode.
+   */
+  _addDXRLinks : function(aNode) {
+    let result = aNode.querySelectorAll("a");
+    let editLink;
+    let reviewLink;
+    let match;
+
+    for (let link of result) {
+      match = link.getAttribute("href").match(AAA_RE_DXR_LINK, "ig");
+
+      if (match && (2 <= match.length)) {
+        editLink = this._createEditLink(match[1], "[Edit]");
+        link.parentNode.insertBefore(editLink, link.nextSibling);
+
+        reviewLink =
+          this._createAMOLink(
+            "[Review]", "/editors/review/$(PARAM)", match[1], true);
+        reviewLink.setAttribute("style", "margin-left: 0.4em;");
+        link.parentNode.insertBefore(reviewLink, link.nextSibling);
       }
     }
   },
