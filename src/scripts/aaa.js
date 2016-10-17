@@ -113,10 +113,7 @@ let AAAContentScript = {
     }
 
     // nope, test the simpler cases.
-    if (AAA_RE_FILE_VIEWER.test(this._path)) {
-      this._log("Found a source viewer page.");
-      this._widenSourceViewer();
-    } else if (AAA_RE_USER_PAGE.test(this._path)) {
+    if (AAA_RE_USER_PAGE.test(this._path)) {
       this._log("Found a user profile page.");
       this._addLinksToUserPage();
     } else if (AAA_RE_COLLECTION_PAGE.test(this._path)) {
@@ -451,18 +448,6 @@ let AAAContentScript = {
     numberSpan.appendChild(spanContent);
     numberSpan.setAttribute("class", "version-number");
     titleNode.appendChild(numberSpan);
-  },
-
-  /**
-   * Makes the source code viewer much wider so it is easier to read.
-   */
-  _widenSourceViewer : function() {
-    let rootNode =
-      document.getElementById("tabzilla-wrapper").firstElementChild;
-    let contentNode = document.getElementById("content-wrapper");
-
-    rootNode.setAttribute("style", "width: 95%; max-width: inherit;");
-    contentNode.style.paddingLeft = "15%";
   },
 
   /**
