@@ -280,32 +280,10 @@ let AAAContentScript = {
   },
 
   /**
-   * Adds a few useful admin links to edit pages. Makes deletion dialog easier
-   * use.
+   * Makes deletion dialog easier to use.
    * @param aSlug the slug that identifies the add-on.
    */
   _modifyEditPage : function(aSlug) {
-    let editNavigation =
-      document.querySelector("ul.refinements:nth-child(2) > li > a");
-
-    if (null != editNavigation) {
-      let insertionPoint = editNavigation.parentNode;
-      let container = document.createElement("li");
-      let adminLink = this._createAdminLink(aSlug);
-      let reviewLink = this._createAMOReviewLink(aSlug);
-
-      container.appendChild(adminLink);
-      insertionPoint.insertBefore(
-        container, insertionPoint.firstChild.nextSibling);
-
-      container = document.createElement("li");
-      container.appendChild(reviewLink);
-      insertionPoint.insertBefore(
-        container, insertionPoint.firstChild.nextSibling);
-    } else {
-      this._log("Navigation insertion point could not be found.");
-    }
-
     this._fillDeletionDialog();
   },
 
