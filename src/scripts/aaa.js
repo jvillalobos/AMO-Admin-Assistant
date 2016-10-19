@@ -205,7 +205,7 @@ let AAAContentScript = {
   },
 
   /**
-   * Adds a few useful admin links to theme listing pages.
+   * Adds a link to the header image in theme listing pages.
    */
   _modifyThemeListing : function(aSlug) {
     let summaryNode = this._doc.getElementById("persona-summary");
@@ -216,15 +216,11 @@ let AAAContentScript = {
       let personaJSON = personaNode.getAttribute("data-browsertheme");
       let persona = JSON.parse(personaJSON);
       let headerLink = this._createLink("Header", persona.headerURL);
-      let footerLink = this._createLink("Footer", persona.footerURL);
       let insertionPoint = this._doc.querySelector("div.widgets");
 
       if (null != insertionPoint) {
         headerLink.setAttribute("class", "collection-add widget collection");
         insertionPoint.appendChild(headerLink);
-
-        footerLink.setAttribute("class", "collection-add widget collection");
-        insertionPoint.appendChild(footerLink);
       } else {
         this._log("Insertion point could not be found.");
       }
