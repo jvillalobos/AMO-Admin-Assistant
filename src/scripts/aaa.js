@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 Jorge Villalobos
+ * Copyright 2016 Jorge Villalobos
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,24 @@
 
 "use strict";
 
-var AAA_RE_AMO_DOMAINS = /addons(?:-dev)?\.(?:mozilla|allizom)\.org/i;
-var AAA_RE_LISTING_PAGE =
+const AAA_RE_AMO_DOMAINS = /addons(?:-dev)?\.(?:mozilla|allizom)\.org/i;
+const AAA_RE_LISTING_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?addon\/([^\/]+)(?:\/)?$/i;
-var AAA_RE_EDIT_PAGE =
+const AAA_RE_EDIT_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?developers\/addon\/([^\/]+)(?:\/([^\/]+))?/i;
-var AAA_RE_BG_THEME_EDIT_PAGE =
+const AAA_RE_BG_THEME_EDIT_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?developers\/theme\/([^\/]+)(?:\/([^\/]+))?/i;
-var AAA_RE_USER_PAGE =
+const AAA_RE_USER_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?user\//i;
-var AAA_RE_USER_ADMIN_PAGE =
+const AAA_RE_USER_ADMIN_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?admin\/models\/(?:(?:auth\/user\/)|(?:users\/userprofile\/))([0-9]+)?/i;
-var AAA_RE_COLLECTION_PAGE =
+const AAA_RE_COLLECTION_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?collections\//i;
-var AAA_RE_COLLECTION_ID =
+const AAA_RE_COLLECTION_ID =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?collections\/((?:[^\/]+)\/(?:[^\/]+))/i;
-var AAA_RE_GET_NUMBER = /\/([0-9]+)(\/|$)/;
-var AAA_RE_FILE_VIEWER =
-  /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?files\//i;
-var AAA_RE_ADDONS_MXR = /^\/addons\//i;
-var AAA_RE_MXR_LINK = /\/addons\/source\/([0-9]+)\/$/;
+const AAA_RE_GET_NUMBER = /\/([0-9]+)(\/|$)/;
+const AAA_RE_ADDONS_DXR = /^\/addons\//i;
+const AAA_RE_DXR_LINK = /\/addons\/source\/([0-9]+)\/?$/;
 
 let AAAContentScript = {
   _doc : null,
@@ -57,8 +55,8 @@ let AAAContentScript = {
 
       if (AAA_RE_AMO_DOMAINS.test(this._doc.location.hostname)) {
         this._runAMO();
-      } else if ("mxr.mozilla.org" == this._doc.location.hostname) {
-        this._runMXR();
+      } else if ("dxr.mozilla.org" == this._doc.location.hostname) {
+        this._runDXR();
       }
     }
   },
@@ -86,19 +84,20 @@ let AAAContentScript = {
       // this excludes validation result pages.
       if ((2 == matchEdit.length) || ("file" != matchEdit[2])) {
         this._log("Found an AMO edit page.");
-        // this is an AMO edit page. matchEdit[1] is the add-on slug.
-        this._modifyEditPage(matchEdit[1]);
+        // this is an AMO edit page.
+        this._modifyEditPage();
       }
 
       return;
     }
 
-    // check if this is a bg theme edit page.
+    // check if this is a lightweight theme edit page.
     let matchBgEdit = this._path.match(AAA_RE_BG_THEME_EDIT_PAGE, "ig");
 
     if (matchBgEdit && (2 <= matchBgEdit.length)) {
-      this._log("Found an AMO bg theme edit page.");
-      // this is an AMO bg theme edit page. matchBgEdit[1] is the add-on slug.
+      this._log("Found an AMO lightweight theme edit page.");
+      // this is an AMO lightweight theme edit page. matchBgEdit[1] is the
+      // add-on slug.
       this._modifyBgThemeEditPage(matchBgEdit[1]);
 
       return;
@@ -121,10 +120,7 @@ let AAAContentScript = {
     }
 
     // nope, test the simpler cases.
-    if (AAA_RE_FILE_VIEWER.test(this._path)) {
-      this._log("Found a source viewer page.");
-      this._widenSourceViewer();
-    } else if (AAA_RE_USER_PAGE.test(this._path)) {
+    if (AAA_RE_USER_PAGE.test(this._path)) {
       this._log("Found a user profile page.");
       this._addLinksToUserPage();
     } else if (AAA_RE_COLLECTION_PAGE.test(this._path)) {
@@ -134,12 +130,62 @@ let AAAContentScript = {
   },
 
   /**
-   * Run the MXR handler.
+   * Run the DXR handler.
    */
-  _runMXR : function() {
-    if (AAA_RE_ADDONS_MXR.test(this._path)) {
-      this._log("Found an add-ons MXR page.");
-      this._addLinksToMXR();
+  _runDXR : function() {
+    if (AAA_RE_ADDONS_DXR.test(this._path)) {
+      this._log("Found an add-ons DXR page.");
+
+      try {
+        let that = this;
+        let contentNode = this._doc.getElementById("content");
+        let observer =
+          new this._doc.defaultView.MutationObserver(function(aMutations) {
+            for (let mutation of aMutations) {
+              for (let node of mutation.addedNodes) {
+                if (node.ELEMENT_NODE == node.nodeType) {
+                  that._log("Node: " + node);
+                  that._addDXRLinks(node);
+                }
+              }
+          }
+        });
+
+        // add links to current content (skip it for the front page because
+       // it's to link-heavy and it doesn't work very well)
+        if ("/addons/source/" != this._path) {
+          this._addDXRLinks(this._doc.documentElement);
+        }
+        // add links to new content being added.
+        observer.observe(contentNode, { childList : true });
+      } catch (e) {
+        this._log("_addLinksToDXR error:\n" + e);
+      }
+    }
+  },
+
+  /**
+   * Adds AMO links from DXR pages for all nodes under aNode.
+   */
+  _addDXRLinks : function(aNode) {
+    let result = aNode.querySelectorAll("a");
+    let editLink;
+    let reviewLink;
+    let match;
+
+    for (let link of result) {
+      match = link.getAttribute("href").match(AAA_RE_DXR_LINK, "ig");
+
+      if (match && (2 <= match.length)) {
+        editLink = this._createEditLink(match[1], "[Edit]");
+        link.parentNode.insertBefore(editLink, link.nextSibling);
+
+        reviewLink =
+          this._createAMOLink(
+            "[Review]", "/editors/review/$(PARAM)", match[1], true);
+        reviewLink.setAttribute("style", "margin-left: 0.4em;");
+        link.parentNode.insertBefore(reviewLink, link.nextSibling);
+      }
     }
   },
 
@@ -148,20 +194,20 @@ let AAAContentScript = {
    * add-on id.
    */
   _modifyListingPage : function(aSlug) {
-    let isPersonaListing =
+    let isThemeListing =
       (null != this._doc.getElementById("persona-summary"));
 
-    if (isPersonaListing) {
-      this._modifyPersonaListing(aSlug);
+    if (isThemeListing) {
+      this._modifyThemeListing(aSlug);
     } else {
       this._modifyRegularListing(aSlug);
     }
   },
 
   /**
-   * Adds a few useful admin links to Persona listing pages.
+   * Adds a few useful admin links to theme listing pages.
    */
-  _modifyPersonaListing : function(aSlug) {
+  _modifyThemeListing : function(aSlug) {
     let summaryNode = this._doc.getElementById("persona-summary");
     let personaNode =
       this._doc.querySelector("#persona-summary div.persona-preview > div");
@@ -188,27 +234,17 @@ let AAAContentScript = {
   },
 
   /**
-   * Adds a few useful admin links to non-Persona add-on listing pages, and
-   * exposes the internal add-on id.
+   * Adds a few useful admin links to regular add-on listing pages, and exposes
+   * the internal add-on id.
    */
   _modifyRegularListing : function(aSlug) {
     let addonNode = this._doc.getElementById("addon");
-    let is404 = (null == addonNode);
-    let adminLink = this._createAdminLink(aSlug);
-    let reviewLink = this._createAMOReviewLink(aSlug);
-    let insertionPoint = null;
 
-    if (!is404) {
-      this._showAddonId(addonNode);
-      insertionPoint = this._doc.querySelector("div.widgets");
-
-      if (null == insertionPoint) {
-        this._log("There's no widgets section!");
-      }
-    } else {
+    if (null == addonNode) {
       this._log("There is no add-on node. This may be a 404 page.");
 
       let aside = this._doc.querySelector("aside.secondary");
+      let insertionPoint = null;
 
       if (null != aside) {
         // author-disabled add-on page.
@@ -227,56 +263,26 @@ let AAAContentScript = {
             insertionPoint, errorMessage.firstElementChild.nextSibling);
         }
       }
-    }
 
-    if (null != insertionPoint) {
-      adminLink.setAttribute("class", "collection-add widget collection");
-      insertionPoint.appendChild(adminLink);
-
-      if (is404) {
-        insertionPoint.appendChild(this._doc.createElement("br"));
-      }
-
-      reviewLink.setAttribute("class", "collection-add widget collection");
-      insertionPoint.appendChild(reviewLink);
-
-      if (is404) {
+      if (null != insertionPoint) {
+        let adminLink = this._createAdminLink(aSlug);
+        let reviewLink = this._createAMOReviewLink(aSlug);
         let editLink = this._createEditLink(aSlug);
 
-        editLink.setAttribute("class", "collection-add widget collection");
-        insertionPoint.appendChild(this._doc.createElement("br"));
-        insertionPoint.appendChild(editLink);
+        this._appendListingLink(insertionPoint, adminLink);
+        this._appendListingLink(insertionPoint, reviewLink);
+        this._appendListingLink(insertionPoint, editLink);
+      } else {
+        this._log("Insertion point could not be found.");
       }
-    } else {
-      this._log("Insertion point could not be found.");
     }
   },
 
   /**
-   * Adds a few useful admin links to edit pages.
-   * @param aSlug the slug that identifies the add-on.
+   * Makes deletion dialog easier to use.
    */
-  _modifyEditPage : function(aSlug) {
-    let result =
-      this._doc.querySelector("ul.refinements:nth-child(2) > li > a");
-
-    if (null != result) {
-      let insertionPoint = result.parentNode;
-      let container = this._doc.createElement("li");
-      let adminLink = this._createAdminLink(aSlug);
-      let reviewLink = this._createAMOReviewLink(aSlug);
-
-      container.appendChild(adminLink);
-      insertionPoint.insertBefore(
-        container, insertionPoint.firstChild.nextSibling);
-
-      container = this._doc.createElement("li");
-      container.appendChild(reviewLink);
-      insertionPoint.insertBefore(
-        container, insertionPoint.firstChild.nextSibling);
-    } else {
-      this._log("Insertion point could not be found.");
-    }
+  _modifyEditPage : function() {
+    this._fillDeletionDialog();
   },
 
   /**
@@ -296,6 +302,8 @@ let AAAContentScript = {
     } else {
       this._log("Insertion point could not be found.");
     }
+
+    this._fillDeletionDialog();
   },
 
   /**
@@ -388,53 +396,36 @@ let AAAContentScript = {
   },
 
   /**
-   * Makes the numeric add-on id visible in add-on listing pages.
-   * @param aAddonNode the node that holds the numeric add-on id.
+   * Pre-fills the deletion dialog for add-ons, to make it easier for admins.
    */
-  _showAddonId : function(aAddonNode) {
-    let addonId = aAddonNode.getAttribute("data-id");
-    let titleNode = this._doc.querySelector("h1.addon");
-    let numberSpan = this._doc.createElement("span");
-    let spanContent = this._doc.createTextNode("[" + addonId + "]");
+  _fillDeletionDialog : function() {
+    let slugInput =
+      this._doc.querySelector("div.modal-delete input[name=slug]");
 
-    numberSpan.appendChild(spanContent);
-    numberSpan.setAttribute("class", "version-number");
-    titleNode.appendChild(numberSpan);
-  },
+    if (null != slugInput) {
+      let reason = this._doc.getElementById("id_reason");
 
-  /**
-   * Makes the source code viewer much wider so it is easier to read.
-   */
-  _widenSourceViewer : function() {
-    let rootNode =
-      this._doc.getElementById("tabzilla-wrapper").firstElementChild;
-    let contentNode = this._doc.getElementById("content-wrapper");
+      slugInput.value = slugInput.getAttribute("placeholder");
 
-    rootNode.setAttribute("style", "width: 95%; max-width: inherit;");
-    contentNode.style.paddingLeft = "15%";
-  },
-
-  /**
-   * Adds add-on links to AMO from the add-ons MXR.
-   */
-  _addLinksToMXR : function() {
-    try {
-      let result = this._doc.querySelectorAll("a");
-      let editLink;
-      let match;
-
-      for (let link of result) {
-        match = link.getAttribute("href").match(AAA_RE_MXR_LINK, "ig");
-
-        if (match && (2 <= match.length)) {
-          editLink = this._createEditLink(match[1], "[Edit on AMO]");
-          editLink.setAttribute("style", "margin-left: 0.4em;");
-          link.parentNode.insertBefore(editLink, link.nextSibling);
-        }
+      if (null != reason) {
+          reason.value = "I'm an admin, bitch!";
       }
-    } catch (e) {
-      this._log("_addLinksToMXR error:\n" + e);
+    } else {
+      this._log("Delete dialog could not be found.");
     }
+  },
+
+  /**
+   * Inserts a link to a listing page.
+   * @param aParent the parent node.
+   * @param aLink the link node to insert.
+   */
+  _appendListingLink : function(aParent, aLink) {
+    let container = this._doc.createElement("p");
+
+    aLink.setAttribute("class", "collection-add widget collection");
+    container.appendChild(aLink);
+    aParent.appendChild(container);
   },
 
   _createAdminLink : function(aId) {
@@ -523,7 +514,7 @@ let AAALoadListener = function(aEvent) { AAAContentScript.run(aEvent); };
 addEventListener("load", AAALoadListener, true);
 
 addMessageListener(
-  "aaa@xulforge.com:unload",
+  "aaa-legacy@xulforge.com:unload",
   function(aMessage) {
     if (aMessage.data == Components.stack.filename) {
       removeEventListener("load", AAALoadListener, true);

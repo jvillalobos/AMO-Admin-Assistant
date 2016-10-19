@@ -2,7 +2,7 @@
 extension_name := aaa
 
 # The UUID of the extension.
-extension_uuid := aaa@xulforge.com
+extension_uuid := aaa-legacy@xulforge.com
 
 # The name of the profile dir where the extension can be installed.
 profile_dir := aaa-dev

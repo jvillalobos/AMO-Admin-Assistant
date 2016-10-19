@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Jorge Villalobos
+ * Copyright 2016 Jorge Villalobos
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ const Cc = Components.classes;
 const Ci = Components.interfaces;
 
 const SCRIPT_URL = "chrome://amo-admin-scripts/content/aaa.js";
-const UNLOAD_MSG = "aaa@xulforge.com:unload"
+const UNLOAD_MSG = "aaa-legacy@xulforge.com:unload"
 
 function install(aData, aReason) {}
 
