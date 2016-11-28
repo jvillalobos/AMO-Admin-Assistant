@@ -23,10 +23,11 @@
     <em:id>aaa-legacy@xulforge.com</em:id>
     <em:name>AMO Admin Assistant</em:name>
     <em:description>Some simple tools to facilitate AMO administration.</em:description>
-    <em:version>2.5</em:version>
+    <em:version>2.6</em:version>
     <em:creator>Jorge Villalobos</em:creator>
     <em:contributor>Andreas Wagner</em:contributor>
     <em:bootstrap>true</em:bootstrap>
+    <em:multiprocessCompatible>true</em:multiprocessCompatible>
     <em:type>2</em:type>
 
     <!-- Mozilla Firefox -->
