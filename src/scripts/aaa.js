@@ -33,7 +33,7 @@ const AAA_RE_COLLECTION_ID =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?collections\/((?:[^\/]+)\/(?:[^\/]+))/i;
 const AAA_RE_GET_NUMBER = /\/([0-9]+)(\/|$)/;
 const AAA_RE_ADDONS_DXR = /^\/addons\//i;
-const AAA_RE_DXR_LINK = /\/addons\/source\/([0-9]+)\/?$/;
+const AAA_RE_DXR_LINK = /\/addons\/source\/addons\/([0-9]+)\/?$/;
 
 let AAAContentScript = {
   _doc : null,
@@ -139,12 +139,14 @@ let AAAContentScript = {
       try {
         let that = this;
         let contentNode = this._doc.getElementById("content");
-        let observer =
+
+        this._dxrObserver =
           new this._doc.defaultView.MutationObserver(function(aMutations) {
+            //that._log("Observer detected change: " + aMutations);
+
             for (let mutation of aMutations) {
               for (let node of mutation.addedNodes) {
                 if (node.ELEMENT_NODE == node.nodeType) {
-                  that._log("Node: " + node);
                   that._addDXRLinks(node);
                 }
               }
@@ -152,12 +154,13 @@ let AAAContentScript = {
         });
 
         // add links to current content (skip it for the front page because
-       // it's to link-heavy and it doesn't work very well)
-        if ("/addons/source/" != this._path) {
+       // it's too link-heavy and it doesn't work very well)
+        if ("/addons/source/addons" != this._path) {
           this._addDXRLinks(this._doc.documentElement);
         }
         // add links to new content being added.
-        observer.observe(contentNode, { childList : true });
+        this._dxrObserver.observe(
+          contentNode, { subtree : true, childList : true });
       } catch (e) {
         this._log("_addLinksToDXR error:\n" + e);
       }
