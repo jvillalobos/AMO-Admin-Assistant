@@ -429,7 +429,7 @@ let AAAContentScript = {
 
   _createAdminLink : function(aId) {
     let link =
-      this._createAMOLink(
+      this._createAMOAdminLink(
         "Admin this Add-on", "/admin/addon/manage/$(PARAM)", aId);
 
     return link;
@@ -446,7 +446,7 @@ let AAAContentScript = {
 
   _createDeleteUserLink : function(aId) {
     let link =
-      this._createAMOLink(
+      this._createAMOAdminLink(
         "Delete user", "/admin/models/users/userprofile/$(PARAM)/delete/", aId);
 
     return link;
@@ -484,6 +484,18 @@ let AAAContentScript = {
     } else {
       href = aPath;
     }
+
+    return this._createLink(aText, href.replace("$(PARAM)", aParameter));
+  },
+
+  /**
+   * Creates an 'a' node pointing to the AMO admin server.
+   * @param aText the text in the link.
+   * @param aPath the relative path to use.
+   * @param aParameter the parameter value to replace in the path.
+   */
+  _createAMOAdminLink : function(aText, aPath, aParameter) {
+    let href = "https://addons-internal.prod.mozaws.net" + aPath;
 
     return this._createLink(aText, href.replace("$(PARAM)", aParameter));
   },
