@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "AMO Admin Assistant",
-  "version": "3.5",
+  "version": "4.0",
 
   "description": "Some simple tools to facilitate AMO administration.",
   "homepage_url": "https://github.com/jvillalobos/AMO-Admin-Assistant",
@@ -16,9 +16,7 @@
   "content_scripts": [
     {
       "matches": [
-        "https://addons.mozilla.org/*",
-        "https://addons.allizom.org/*",
-        "https://addons-dev.allizom.org/*",
+        "https://addons-internal.prod.mozaws.net/*",
         "https://dxr.mozilla.org/addons/*" ],
       "js": [ "scripts/aaa.js" ]
     }
