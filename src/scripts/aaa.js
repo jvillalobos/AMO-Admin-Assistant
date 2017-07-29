@@ -35,17 +35,15 @@ const AAA_RE_ADDONS_DXR = /^\/addons\//i;
 const AAA_RE_DXR_LINK = /\/addons\/source\/addons\/([0-9]+)\/?$/;
 
 let AAAContentScript = {
-  _doc : null,
   _path : null,
 
   /**
    * Runs the content script on this page.
    */
   run : function(aEvent) {
-    this._doc = aEvent.originalTarget;
-    this._path = this._doc.location.pathname;
+    this._path = document.location.pathname;
 
-    if ("dxr.mozilla.org" == this._doc.location.hostname) {
+    if ("dxr.mozilla.org" == document.location.hostname) {
       this._runDXR();
     } else {
       this._runAMO();
@@ -129,10 +127,9 @@ let AAAContentScript = {
 
       try {
         let that = this;
-        let contentNode = this._doc.getElementById("content");
+        let contentNode = document.getElementById("content");
 
-        this._dxrObserver =
-          new this._doc.defaultView.MutationObserver(function(aMutations) {
+        this._dxrObserver = new MutationObserver(function(aMutations) {
             //that._log("Observer detected change: " + aMutations);
 
             for (let mutation of aMutations) {
@@ -147,7 +144,7 @@ let AAAContentScript = {
         // add links to current content (skip it for the front page because
        // it's too link-heavy and it doesn't work very well)
         if ("/addons/source/addons" != this._path) {
-          this._addDXRLinks(this._doc.documentElement);
+          this._addDXRLinks(document.documentElement);
         }
         // add links to new content being added.
         this._dxrObserver.observe(
@@ -189,7 +186,7 @@ let AAAContentScript = {
    */
   _modifyListingPage : function(aSlug) {
     let isThemeListing =
-      (null != this._doc.getElementById("persona-summary"));
+      (null != document.getElementById("persona-summary"));
 
     if (isThemeListing) {
       this._modifyThemeListing(aSlug);
@@ -202,15 +199,15 @@ let AAAContentScript = {
    * Adds a link to the header image in theme listing pages.
    */
   _modifyThemeListing : function(aSlug) {
-    let summaryNode = this._doc.getElementById("persona-summary");
+    let summaryNode = document.getElementById("persona-summary");
     let personaNode =
-      this._doc.querySelector("#persona-summary div.persona-preview > div");
+      document.querySelector("#persona-summary div.persona-preview > div");
 
     if (null != personaNode) {
       let personaJSON = personaNode.getAttribute("data-browsertheme");
       let persona = JSON.parse(personaJSON);
       let headerLink = this._createLink("Header", persona.headerURL);
-      let insertionPoint = this._doc.querySelector("div.widgets");
+      let insertionPoint = document.querySelector("div.widgets");
 
       if (null != insertionPoint) {
         headerLink.setAttribute("class", "collection-add widget collection");
@@ -228,25 +225,25 @@ let AAAContentScript = {
    * the internal add-on id.
    */
   _modifyRegularListing : function(aSlug) {
-    let addonNode = this._doc.getElementById("addon");
+    let addonNode = document.getElementById("addon");
 
     if (null == addonNode) {
       this._log("There is no add-on node. This may be a 404 page.");
 
-      let aside = this._doc.querySelector("aside.secondary");
+      let aside = document.querySelector("aside.secondary");
       let insertionPoint = null;
 
       if (null != aside) {
         // author-disabled add-on page.
-        insertionPoint = this._doc.createElement("div");
+        insertionPoint = document.createElement("div");
         insertionPoint.setAttribute("style", "margin-top: 1em;");
         aside.appendChild(insertionPoint);
       } else {
-        let errorMessage = this._doc.querySelector("div.primary");
+        let errorMessage = document.querySelector("div.primary");
 
         if (null != errorMessage) {
           // 404 pages (disabled, incomplete, or actually 404).
-          insertionPoint = this._doc.createElement("div");
+          insertionPoint = document.createElement("div");
           insertionPoint.setAttribute(
             "style", "margin-top: 1em; margin-bottom: 1em;");
           errorMessage.insertBefore(
@@ -280,11 +277,11 @@ let AAAContentScript = {
    * @param aSlug the slug that identifies the theme.
    */
   _modifyThemeEditPage : function(aSlug) {
-    let result = this._doc.querySelector("div.info > p:nth-child(2)");
+    let result = document.querySelector("div.info > p:nth-child(2)");
 
     if (null != result) {
       let insertionPoint = result.parentNode;
-      let container = this._doc.createElement("p");
+      let container = document.createElement("p");
       let reviewLink = this._createThemeReviewLink(aSlug);
 
       container.appendChild(reviewLink);
@@ -300,7 +297,7 @@ let AAAContentScript = {
    * Adds an delete link to user pages.
    */
   _addLinksToUserPage : function() {
-    let manageButton = this._doc.getElementById("manage-user");
+    let manageButton = document.getElementById("manage-user");
 
     if (null != manageButton) {
       let manageURL = manageButton.getAttribute("href");
@@ -322,7 +319,7 @@ let AAAContentScript = {
    */
   _addToCollectionPage : function() {
     let widgetBoxes =
-      this._doc.querySelectorAll("div.collection_widgets.condensed.widgets");
+      document.querySelectorAll("div.collection_widgets.condensed.widgets");
 
     for (let box of widgetBoxes) {
       let watchURL = box.firstElementChild.getAttribute("href");
@@ -330,8 +327,8 @@ let AAAContentScript = {
 
       if (matchURL && (2 <= matchURL.length)) {
         let collectionID = matchURL[1];
-        let link = this._doc.createElement("a");
-        let label = this._doc.createTextNode("Delete");
+        let link = document.createElement("a");
+        let label = document.createTextNode("Delete");
 
         link.setAttribute("href", `/collections/${collectionID}/delete`);
         link.appendChild(label);
@@ -347,7 +344,7 @@ let AAAContentScript = {
    * @param aUserID the user ID from the page URL.
    */
   _modifyUserAdminPage : function(aUserID) {
-    let result = this._doc.querySelector("a.viewsitelink");
+    let result = document.querySelector("a.viewsitelink");
 
     if (null != result) {
       result.setAttribute("href", ("/user/" + aUserID + "/"));
@@ -362,7 +359,7 @@ let AAAContentScript = {
   _modifyUserAdminSearchPage : function() {
     try {
       let result =
-        this._doc.querySelectorAll("#result_list > tbody > tr > th > a");
+        document.querySelectorAll("#result_list > tbody > tr > th > a");
       let match;
       let userID;
       let newLink;
@@ -373,7 +370,7 @@ let AAAContentScript = {
         if (match && (2 <= match.length)){
           userID = match[1];
           // create a new link that points to the profile page.
-          newLink = this._doc.createElement("a");
+          newLink = document.createElement("a");
           newLink.setAttribute("href", ("/user/" + userID + "/"));
           newLink.setAttribute("style", "margin-left: 0.5em;");
           newLink.textContent = "[" + userID + "]";
@@ -389,11 +386,10 @@ let AAAContentScript = {
    * Pre-fills the deletion dialog for add-ons, to make it easier for admins.
    */
   _fillDeletionDialog : function() {
-    let slugInput =
-      this._doc.querySelector("div.modal-delete input[name=slug]");
+    let slugInput = document.querySelector("div.modal-delete input[name=slug]");
 
     if (null != slugInput) {
-      let reason = this._doc.getElementById("id_reason");
+      let reason = document.getElementById("id_reason");
 
       slugInput.value = slugInput.getAttribute("placeholder");
 
@@ -411,7 +407,7 @@ let AAAContentScript = {
    * @param aLink the link node to insert.
    */
   _appendListingLink : function(aParent, aLink) {
-    let container = this._doc.createElement("p");
+    let container = document.createElement("p");
 
     aLink.setAttribute("class", "collection-add widget collection");
     container.appendChild(aLink);
@@ -484,8 +480,8 @@ let AAAContentScript = {
    * @param aURL the URL the link points to.
    */
   _createLink : function(aText, aURL) {
-    let link = this._doc.createElement("a");
-    let linkContent = this._doc.createTextNode(aText);
+    let link = document.createElement("a");
+    let linkContent = document.createTextNode(aText);
 
     link.setAttribute("href", aURL);
     link.appendChild(linkContent);
@@ -494,9 +490,8 @@ let AAAContentScript = {
   },
 
   _log : function (aText) {
-    this._doc.defaultView.console.log(aText);
+    console.log(aText);
   }
 };
 
-addEventListener(
-  "load", function(aEvent) { AAAContentScript.run(aEvent) }, true);
+AAAContentScript.run();
