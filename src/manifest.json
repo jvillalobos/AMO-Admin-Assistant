@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "AMO Admin Assistant",
-  "version": "4.0",
+  "version": "4.1",
 
   "description": "Some simple tools to facilitate AMO administration.",
   "homepage_url": "https://github.com/jvillalobos/AMO-Admin-Assistant",
@@ -13,6 +13,14 @@
     }
   },
 
+  "background": {
+    "scripts": [ "background.js" ]
+  },
+
+  "permissions": [
+    "tabs"
+  ],
+
   "content_scripts": [
     {
       "matches": [
@@ -20,5 +28,15 @@
         "https://dxr.mozilla.org/addons/*" ],
       "js": [ "scripts/aaa.js" ]
     }
-  ]
+  ],
+
+  "browser_action": {
+    "default_icon": {
+      "16": "button/addons-16.png",
+      "32": "button/addons-32.png",
+      "64": "button/addons-64.png"
+    },
+
+    "default_title": "AMO Admin Assistant"
+  }
 }
