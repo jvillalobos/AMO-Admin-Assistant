@@ -26,6 +26,8 @@ const AAA_RE_USER_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?user\//i;
 const AAA_RE_USER_ADMIN_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?admin\/models\/(?:(?:auth\/user\/)|(?:users\/userprofile\/))([0-9]+)?/i;
+const AAA_RE_ADDON_MANAGE_PAGE =
+  /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?admin\/addon\/manage\/([^\/]+)?/i;
 const AAA_RE_COLLECTION_PAGE =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?collections\//i;
 const AAA_RE_COLLECTION_ID =
@@ -103,6 +105,20 @@ let AAAContentScript = {
       } else {
         this._log("Found a user admin search page.");
         this._modifyUserAdminSearchPage();
+      }
+
+      return;
+    }
+
+    // check if this is an add-on management page.
+    let matchAddonManage = this._path.match(AAA_RE_ADDON_MANAGE_PAGE, "ig");
+
+    if (matchAddonManage) {
+      if (null != matchAddonManage[1]) {
+        this._log("Found an add-on management page.");
+        // this is an add-on management page. matchAddonManage[1] is the add-on
+        // slug.
+        this._modifyAddonManagePage(matchAddonManage[1]);
       }
 
       return;
@@ -379,6 +395,32 @@ let AAAContentScript = {
       }
     } catch (e) {
       this._log("_modifyUserAdminSearchPage error:\n" + e);
+    }
+  },
+
+  /**
+   * Improve the add-on management page.
+   * @param aSlug the add-on slug.
+   */
+  _modifyAddonManagePage : function(aSlug) {
+    let result = document.querySelector("form > p > input[type=submit]");
+
+    if (null != result) {
+      let disableButton = document.createElement("input");
+
+      disableButton.setAttribute("value", "Disable");
+      disableButton.setAttribute("style", "margin-left: 0.5em;");
+      disableButton.setAttribute("type", "submit");
+      result.parentNode.appendChild(disableButton);
+      disableButton.addEventListener("click", function(aEvent) {
+        let result = document.querySelectorAll("select");
+
+        for (let select of result) {
+          select.value = "5";
+        }
+      });
+    } else {
+      this._log("Update button could not be found.");
     }
   },
 
