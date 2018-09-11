@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 Jorge Villalobos
+ * Copyright 2018 Jorge Villalobos
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,6 @@ const AAA_RE_COLLECTION_PAGE =
 const AAA_RE_COLLECTION_ID =
   /^\/(?:[a-z]{2}(?:\-[a-z]{2})?\/)?(?:(?:firefox|thunderbird|seamonkey|mobile|android)\/)?collections\/((?:[^\/]+)\/(?:[^\/]+))/i;
 const AAA_RE_GET_NUMBER = /\/([0-9]+)(\/|$)/;
-const AAA_RE_ADDONS_DXR = /^\/addons\//i;
-const AAA_RE_DXR_LINK = /\/addons\/source\/addons\/([0-9]+)\/?$/;
 
 let AAAContentScript = {
   _path : null,
@@ -45,17 +43,6 @@ let AAAContentScript = {
   run : function(aEvent) {
     this._path = document.location.pathname;
 
-    if ("dxr.mozilla.org" == document.location.hostname) {
-      this._runDXR();
-    } else {
-      this._runAMO();
-    }
-  },
-
-  /**
-   * Runs the AMO handler.
-   */
-  _runAMO : function() {
     // check if this is a listing page.
     let matchListing = this._path.match(AAA_RE_LISTING_PAGE, "ig");
 
@@ -131,68 +118,6 @@ let AAAContentScript = {
     } else if (AAA_RE_COLLECTION_PAGE.test(this._path)) {
       this._log("Found a collection page.");
       this._addToCollectionPage();
-    }
-  },
-
-  /**
-   * Run the DXR handler.
-   */
-  _runDXR : function() {
-    if (AAA_RE_ADDONS_DXR.test(this._path)) {
-      this._log("Found an add-ons DXR page.");
-
-      try {
-        let that = this;
-        let contentNode = document.getElementById("content");
-
-        this._dxrObserver = new MutationObserver(function(aMutations) {
-            //that._log("Observer detected change: " + aMutations);
-
-            for (let mutation of aMutations) {
-              for (let node of mutation.addedNodes) {
-                if (node.ELEMENT_NODE == node.nodeType) {
-                  that._addDXRLinks(node);
-                }
-              }
-          }
-        });
-
-        // add links to current content (skip it for the front page because
-       // it's too link-heavy and it doesn't work very well)
-        if ("/addons/source/addons" != this._path) {
-          this._addDXRLinks(document.documentElement);
-        }
-        // add links to new content being added.
-        this._dxrObserver.observe(
-          contentNode, { subtree : true, childList : true });
-      } catch (e) {
-        this._log("_addLinksToDXR error:\n" + e);
-      }
-    }
-  },
-
-  /**
-   * Adds AMO links from DXR pages for all nodes under aNode.
-   */
-  _addDXRLinks : function(aNode) {
-    let result = aNode.querySelectorAll("a");
-    let editLink;
-    let reviewLink;
-    let match;
-
-    for (let link of result) {
-      match = link.getAttribute("href").match(AAA_RE_DXR_LINK, "ig");
-
-      if (match && (2 <= match.length)) {
-        editLink = this._createEditLink(match[1], "[Edit]");
-        link.parentNode.insertBefore(editLink, link.nextSibling);
-
-        reviewLink =
-          this._createAMOLink(
-            "[Review]", "/editors/review/$(PARAM)", match[1], true);
-        reviewLink.setAttribute("style", "margin-left: 0.4em;");
-        link.parentNode.insertBefore(reviewLink, link.nextSibling);
-      }
     }
   },
 
@@ -310,7 +235,7 @@ let AAAContentScript = {
   },
 
   /**
-   * Adds an delete link to user pages.
+   * Adds an admin link to user pages.
    */
   _addLinksToUserPage : function() {
     let manageButton = document.getElementById("manage-user");
@@ -318,13 +243,10 @@ let AAAContentScript = {
     if (null != manageButton) {
       let manageURL = manageButton.getAttribute("href");
       let userId = manageURL.substring(manageURL.lastIndexOf("/") + 1);
-      let deleteLink = this._createDeleteUserLink(userId);
+      let adminLink = this._createAdminUserLink(userId);
 
-      deleteLink.setAttribute("class", "button");
-      deleteLink.setAttribute(
-        "style",
-        "background: linear-gradient(rgb(225, 15, 0), rgb(191, 13, 0)) repeat scroll 0% 0% rgb(87, 132, 191)");
-      manageButton.parentNode.appendChild(deleteLink);
+      adminLink.setAttribute("class", "button");
+      manageButton.parentNode.appendChild(adminLink);
     } else {
       this._log("Insertion point could not be found.");
     }
@@ -473,10 +395,10 @@ let AAAContentScript = {
     return link;
   },
 
-  _createDeleteUserLink : function(aId) {
+  _createAdminUserLink : function(aId) {
     let link =
       this._createAMOLink(
-        "Delete user", "/admin/models/users/userprofile/$(PARAM)/delete/", aId);
+        "Admin user", "/admin/models/users/userprofile/$(PARAM)/change/", aId);
 
     return link;
   },
