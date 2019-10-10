@@ -331,9 +331,8 @@ let AAAContentScript = {
       let disableButton = document.createElement("input");
 
       disableButton.setAttribute("value", "Disable");
-      disableButton.setAttribute("style", "margin-left: 0.5em;");
       disableButton.setAttribute("type", "submit");
-      result.parentNode.appendChild(disableButton);
+      document.querySelector("form h3").insertAdjacentElement('beforebegin', disableButton);
       disableButton.addEventListener("click", function(aEvent) {
         let result = document.querySelectorAll("select");
 
